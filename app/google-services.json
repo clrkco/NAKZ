@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "761005141323",
+    "firebase_url": "https://nakz-face-detection.firebaseio.com",
+    "project_id": "nakz-face-detection",
+    "storage_bucket": "nakz-face-detection.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:761005141323:android:87e3790d1fbbd1dc4c4cce",
+        "android_client_info": {
+          "package_name": "com.example.nakz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "761005141323-thg7kmdsodhn9ovj7sgh0hjuiingth0r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDh_Uxq03ZCSiESh9O3skMeal7CwLWjdU4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "761005141323-thg7kmdsodhn9ovj7sgh0hjuiingth0r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

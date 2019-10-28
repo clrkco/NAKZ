@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <husaynhakeem.io.facedetector.FaceBoundsOverlay
+        android:id="@+id/facesBoundsOverlay"
+        android:layout_width="258dp"
+        android:layout_height="186dp"
+        android:layout_marginStart="477dp"
+        android:layout_marginTop="143dp"
+        android:layout_marginBottom="64dp"
+        android:translationZ="3dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.otaliastudios.cameraview.CameraView
+        android:id="@+id/cameraView"
+        android:layout_width="253dp"
+        android:layout_height="182dp"
+        android:layout_marginTop="143dp"
+        android:layout_marginEnd="52dp"
+        android:layout_marginBottom="68dp"
+        android:keepScreenOn="true"
+        android:translationZ="2dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        tools:visibility="invisible">
+
+    </com.otaliastudios.cameraview.CameraView>
+
+    <Button
+        android:id="@+id/setConstantBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="104dp"
+        android:text="Set Initial Position"
+        app:layout_constraintStart_toEndOf="@+id/DisconnectBtn"
+        app:layout_constraintTop_toBottomOf="@+id/compass_txt" />
+
+    <EditText
+        android:id="@+id/objectEntry"
+        android:layout_width="193dp"
+        android:layout_height="51dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Object Name"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.214"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/compass_txt" />
+
+    <Button
+        android:id="@+id/regObjectBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="20dp"
+        android:text="Register Object"
+        app:layout_constraintStart_toEndOf="@+id/findObjectBtn"
+        app:layout_constraintTop_toBottomOf="@+id/setConstantBtn" />
+
+    <TextView
+        android:id="@+id/compass_txt"
+        android:layout_width="291dp"
+        android:layout_height="105dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/comval"
+        android:textSize="23sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.085"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/object_name"
+        android:layout_width="299dp"
+        android:layout_height="78dp"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="44dp"
+        android:text="@string/object_name"
+        app:layout_constraintStart_toEndOf="@+id/compass_txt"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/findObjectBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="80dp"
+        android:layout_marginBottom="80dp"
+        android:text="Find Object"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.018"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/DisconnectBtn"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <Button
+        android:id="@+id/DisconnectBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="88dp"
+        android:layout_marginTop="208dp"
+        android:text="Disconnect
+"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.006" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

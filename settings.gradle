@@ -1,0 +1,2 @@
+include ':app', ':facedetector'
+rootProject.name='NAKZ'
