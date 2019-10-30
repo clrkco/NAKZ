@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.Intent
+import android.graphics.Point
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -17,6 +18,7 @@ import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.Display
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -49,8 +51,21 @@ class MAIN : Activity(), SensorEventListener {
     val webIntent: Intent = Uri.parse("www.google.com").let { webpage ->
         Intent(Intent.ACTION_VIEW, webpage)
     }
+    //Screen size
+    private var width: Int = 0
+    private var length: Int = 0
 
-    //
+    //motor positions
+    private var pan_servo = 150
+    private var tilt_servo = 150
+    private var right_shoulder = 150
+    private var left_shoulder = 150
+    private var right_arm = 150
+    private var left_arm = 150
+    private var right_elbow = 150
+    private var left_elbow = 150
+
+    //compass
     private lateinit var sensorManager: SensorManager
     private val accelerometerReading = FloatArray(3)
     private val magnetometerReading = FloatArray(3)
@@ -65,14 +80,15 @@ class MAIN : Activity(), SensorEventListener {
     private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
     private var add_or_sub_z: Boolean = false //true add, false sub
     private var add_or_sub_y: Boolean = false //true add, false sub
-    private var phone_to_servo_deg_errbitsz : Int = 25
-    private var phone_to_servo_deg_errbitsy : Int = 0
+    private var phone_to_servo_deg_errbitsz: Int = 25
+    private var phone_to_servo_deg_errbitsy: Int = 0
 
     //FACE DETECTION MODULE
     private val faceDetector: FaceDetector by lazy {
-
         FaceDetector(facesBoundsOverlay)
     }
+
+
     companion object {
         var myUUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         var bluetoothSocket: BluetoothSocket? = null
@@ -88,44 +104,63 @@ class MAIN : Activity(), SensorEventListener {
         const val deg_per_ms = 0.03f
 
         //map of object coordinates (Z,Y)
-        var obj_coordinate_map :MutableMap<String, FloatArray> = mutableMapOf(
+        var obj_coordinate_map: MutableMap<String, FloatArray> = mutableMapOf(
             "medicinebox" to floatArrayOf(82f, 72f),
             "aircon" to floatArrayOf(190f, 72f),
             "tv" to floatArrayOf(300f, 50f)
         )
+
+        //offset (in px) for pan-tilt face detection
+        val offset_x = 800f
+        val offset_y = 200f
     }
 
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.compass_main)
-        address = intent.getStringExtra(BluetoothConnect.EXTRA_ADDRESS)
+        try {
+            address = intent.getStringExtra(BluetoothConnect.EXTRA_ADDRESS)!!
+        } catch (e: Exception) {
+            Log.e("onCreate", "address not found.")
+        }
 
         ConnectToDevice(this).execute()
         //compass
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
         //bt module
-        findObjectBtn.setOnClickListener { findObject(objectEntry.text.toString()) }
-        objectEntry.setOnFocusChangeListener { _: View, b: Boolean ->
-            if (b) {
-                objectEntry.text.clear()
-            } else
-                objectEntry.setText("Object Name")
-        }
-        setConstantBtn.setOnClickListener { calibrateSensors() }
-        DisconnectBtn.setOnClickListener { disconnect() }
-        regObjectBtn.setOnClickListener { registerObject(objectEntry.text.toString())}
+//        findObjectBtn.setOnClickListener { findObject(objectEntry.text.toString()) }
+//        objectEntry.setOnFocusChangeListener { _: View, b: Boolean ->
+//            if (b) {
+//                objectEntry.text.clear()
+//            } else
+//                objectEntry.setText("Object Name")
+//        }
+//        setConstantBtn.setOnClickListener { calibrateSensors() }
+//        DisconnectBtn.setOnClickListener { disconnect() }
+//        regObjectBtn.setOnClickListener { registerObject(objectEntry.text.toString())}
 
+        val display: Display = windowManager.defaultDisplay
+        width = display.width
+        length = display.height
+        Log.i("l and w", "$width $length")
         setupCamera()
 
     }
+
     //FACE DETECT MODULE
     private fun setupCamera() {
         cameraView.facing = Facing.FRONT
         cameraView.addFrameProcessor {
-            Log.i("orientation", FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString())
-            Log.i("offset", FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString())
+            Log.i(
+                "orientation",
+                FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
+            )
+            Log.i(
+                "offset",
+                FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString()
+            )
             faceDetector.process(
                 Frame(
                     data = it.data,
@@ -203,6 +238,7 @@ class MAIN : Activity(), SensorEventListener {
             progress.dismiss()
         }
     }
+
     //END BLUETOOTH MODULE
     /* ----------------------------------------------------------------------------------*/
     //Object Pointing Module
@@ -269,10 +305,48 @@ class MAIN : Activity(), SensorEventListener {
             else
                 degreesOrientationAngles[index] = a * 57.2958
         }
-        compass_txt.text = "z: " + getAngle(0).toString() + "\ny: " +
-               getAngle(2).toString()
 
-        determineObject(objectEntry.text.toString())
+        //degrees/Px conversion rate 8.37
+        if (FaceBoundsOverlay.centerX > width / 2 + offset_x || FaceBoundsOverlay.centerX < width / 2 - offset_x ||
+            FaceBoundsOverlay.centerY > length / 2 + offset_y || FaceBoundsOverlay.centerY < width / 2 - offset_y
+        ) {
+            var bit_z : Int = 0
+            var bit_y : Int = 0
+            if(FaceBoundsOverlay.centerX > width / 2 + offset_x ) {
+                //update pan_servo
+                //get px difference
+                //compute px to degrees
+                //add degrees to current pan_servo position
+                //put into a var
+            } else {
+                //update pan_servo
+                //get px difference
+                //compute px to degrees
+                //add degrees to current pan_servo position
+                //put into a var
+            }
+            if(FaceBoundsOverlay.centerY > length/2 + offset_y) {
+                //update tilt_servo
+                //get px difference
+                //compute px to degrees
+                //add degrees to current tilt_servo position
+                //put into a var
+            } else {
+                //update tilt_servo
+                //get px difference
+                //compute px to degrees
+                //add degrees to current tilt_servo position
+                //put into a var
+            }
+            sendCommand("~d_${bit_z}" + "_${bit_y}_#!")
+
+        }
+
+
+//        compass_txt.text = "z: " + getAngle(0).toString() + "\ny: " +
+//               getAngle(2).toString()
+//
+//        determineObject(objectEntry.text.toString())
         /*Log.d("z: " + (degrees_orientationAngles[0]).toString() + "x: "+
                 (degrees_orientationAngles[1]).toString()+ "y: " +
                 (degrees_orientationAngles[2]).toString())*/
@@ -305,9 +379,9 @@ class MAIN : Activity(), SensorEventListener {
         val cur = degreesOrientationAngles[index]
         if (index == 0) {
             return if (add_or_sub_z) {
-                minDegrees(360f,addDegrees(cur.toFloat(), new_z_constant.toFloat()))
+                minDegrees(360f, addDegrees(cur.toFloat(), new_z_constant.toFloat()))
             } else {
-                minDegrees(360f,minDegrees(cur.toFloat(), new_z_constant.toFloat()))
+                minDegrees(360f, minDegrees(cur.toFloat(), new_z_constant.toFloat()))
             }
         } else if (index == 2) {
             return if (add_or_sub_y) {
@@ -335,14 +409,14 @@ class MAIN : Activity(), SensorEventListener {
 
     private fun findObject(objectName: String) {
         //0.293 deg/bit - conversion from angle to bit for AX-12+
-        var objName = objectName.toLowerCase().trim().replace("\\s".toRegex(),"")
+        var objName = objectName.toLowerCase().trim().replace("\\s".toRegex(), "")
 
         try {
             val objCoords = obj_coordinate_map[objName]
             val obj_z = objCoords?.get(0)
             val obj_y = objCoords?.get(1)
-            val bit_z : Double
-            if(getAngle(0) < 150f){
+            val bit_z: Double
+            if (getAngle(0) < 150f) {
                 bit_z = obj_z!!.div(0.293) - phone_to_servo_deg_errbitsz
             } else {
                 bit_z = obj_z!!.div(0.293) + phone_to_servo_deg_errbitsz
@@ -352,7 +426,10 @@ class MAIN : Activity(), SensorEventListener {
 
 
             Log.e("Sending Command: ", "Z: ${bit_z.toInt()}" + "Y: ${bit_y.toInt()}")
-            sendCommand("~p_${bit_z.toInt()}" + "_${bit_y.toInt()}_#!" )
+            pan_servo = bit_z.toInt()
+            tilt_servo = bit_y.toInt()
+
+            sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
             /* Using endless turn mode
             var degrees_turnZ = curZ - obj_z!!
             var turn_timeZ = 0.0
@@ -379,54 +456,54 @@ class MAIN : Activity(), SensorEventListener {
                 }
             }*/
         } catch (e: Exception) {
-            Toast.makeText(this,"Object not registered.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Object not registered.", Toast.LENGTH_SHORT).show()
         }
     }
 
     /*Use this function to register POIs */
-    private fun registerObject(newObject : String){
-        var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(),"")
-        if(!obj_coordinate_map.containsKey(objName)){
-            obj_coordinate_map[objName] = floatArrayOf(getAngle(0),getAngle(2))
-        } else
-            Toast.makeText(this, "Object already registered.", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun compareCoord(curCoord: Float, obj_yz: Float): Boolean {
-        val lowerV = minDegrees(obj_yz, margin_of_error)
-        val higherV = addDegrees(obj_yz, margin_of_error)
-        var objectWithinBounds = false
-        if (higherV < lowerV) {
-            if (curCoord in lowerV..359f || curCoord in 0f..higherV) //if lowerV reduces beyond 0
-                objectWithinBounds = true
-        } else {
-            if (curCoord in lowerV..higherV)
-                objectWithinBounds = true
-        }
-        return objectWithinBounds
-    }
-
-    private fun determineObject(objectName: String): Boolean { //return true if object is found
-        var objectFound = false
-        //MEDICINE BOX
-        try {
-            val objCoords = obj_coordinate_map[objectName]
-            val obj_z = objCoords?.get(0)
-            val obj_y = objCoords?.get(1)
-            //                curY <= obj_y!! + margin_of_error && curY >= obj_y - margin_of_error)
-
-            if (compareCoord(getAngle(0), obj_z!!) && compareCoord(getAngle(2), obj_y!!)) {
-                object_name.text = objectName
-                objectFound = true
-            } else {
-                object_name.text = ""
-                objectFound = false
-            }
-        } catch (ex: Exception) {
-
-        }
-        return objectFound
-    }
+//    private fun registerObject(newObject : String){
+//        var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(),"")
+//        if(!obj_coordinate_map.containsKey(objName)){
+//            obj_coordinate_map[objName] = floatArrayOf(getAngle(0),getAngle(2))
+//        } else
+//            Toast.makeText(this, "Object already registered.", Toast.LENGTH_SHORT).show()
+//    }
+//
+//    private fun compareCoord(curCoord: Float, obj_yz: Float): Boolean {
+//        val lowerV = minDegrees(obj_yz, margin_of_error)
+//        val higherV = addDegrees(obj_yz, margin_of_error)
+//        var objectWithinBounds = false
+//        if (higherV < lowerV) {
+//            if (curCoord in lowerV..359f || curCoord in 0f..higherV) //if lowerV reduces beyond 0
+//                objectWithinBounds = true
+//        } else {
+//            if (curCoord in lowerV..higherV)
+//                objectWithinBounds = true
+//        }
+//        return objectWithinBounds
+//    }
+//
+//    private fun determineObject(objectName: String): Boolean { //return true if object is found
+//        var objectFound = false
+//        //MEDICINE BOX
+//        try {
+//            val objCoords = obj_coordinate_map[objectName]
+//            val obj_z = objCoords?.get(0)
+//            val obj_y = objCoords?.get(1)
+//            //                curY <= obj_y!! + margin_of_error && curY >= obj_y - margin_of_error)
+//
+//            if (compareCoord(getAngle(0), obj_z!!) && compareCoord(getAngle(2), obj_y!!)) {
+//                object_name.text = objectName
+//                objectFound = true
+//            } else {
+//                object_name.text = ""
+//                objectFound = false
+//            }
+//        } catch (ex: Exception) {
+//
+//        }
+//        return objectFound
+//    }
 
     // Compute the three orientation angles based on the most recent readings from
     // the device's accelerometer and magnetometer.
