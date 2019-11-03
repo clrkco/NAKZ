@@ -15,6 +15,7 @@ import android.hardware.SensorManager
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -110,9 +111,15 @@ class MAIN : Activity(), SensorEventListener {
             "tv" to floatArrayOf(300f, 50f)
         )
 
+        //degrees conversion rate
+        val deg_from_px = 8.37f
+
         //offset (in px) for pan-tilt face detection
-        val offset_x = 800f
-        val offset_y = 200f
+        val offset_x = 1200f
+        val offset_y = 500f
+
+        //regulating sending of commands 
+        var AllowSend: Boolean = true
     }
 
 
@@ -157,10 +164,10 @@ class MAIN : Activity(), SensorEventListener {
                 "orientation",
                 FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
             )
-            Log.i(
-                "offset",
-                FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString()
-            )
+//            Log.i(
+//                "offset",
+//                FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString()
+//            )
             faceDetector.process(
                 Frame(
                     data = it.data,
@@ -305,41 +312,56 @@ class MAIN : Activity(), SensorEventListener {
             else
                 degreesOrientationAngles[index] = a * 57.2958
         }
+//        Log.i(
+//            "goes in",
+//            (FaceBoundsOverlay.centerX > width / 2f + offset_x).toString() + " " + (FaceBoundsOverlay.centerX < width / 2f - offset_x).toString() + " " +
+//                    (FaceBoundsOverlay.centerY > length / 2f + offset_y).toString() + " " + (FaceBoundsOverlay.centerY < length / 2f - offset_y).toString()
+//        )
+        if (AllowSend) {
+            //degrees/Px conversion rate 8.37
+            if (FaceBoundsOverlay.centerX > width / 2f + offset_x || FaceBoundsOverlay.centerX < width / 2f - offset_x ||
+                FaceBoundsOverlay.centerY > length / 2f + offset_y || FaceBoundsOverlay.centerY < length / 2f - offset_y
+            ) {
+                //center x, center y
+//                Log.i("width", (width / 2f + offset_x).toString())
+//                Log.i("width", (width / 2f - offset_x).toString())
+//                Log.i("length", (length / 2f + offset_y).toString())
+//                Log.i("length", (length / 2f - offset_y).toString())
+                if (FaceBoundsOverlay.centerX > width / 2f + offset_x) { //ccw
+                    val diff_in_pixels = FaceBoundsOverlay.centerX - width / 2f
+                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    pan_servo += deg_from_pixels.toInt()
+                } else {
+                    val diff_in_pixels = width / 2f - FaceBoundsOverlay.centerX
+                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    pan_servo -= deg_from_pixels.toInt()
+                }
+                if (FaceBoundsOverlay.centerY > length / 2f + offset_y) {
+                    val diff_in_pixels = FaceBoundsOverlay.centerY - length / 2f
+                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    tilt_servo -= deg_from_pixels.toInt()
+                } else {
+                    val diff_in_pixels = length / 2f - FaceBoundsOverlay.centerY
+                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    tilt_servo += deg_from_pixels.toInt()
+                }
+//                Log.i("isConnected" , isConnected.toString())
+                if (isConnected && AllowSend) { //change isConnected when Arduino is present
+                    Log.i("sending command", "sending")
+                    sendCommand("~d_${pan_servo}" + "_${tilt_servo}_#!")
+                    AllowSend = false
+                    object : CountDownTimer(3000, 1000) {
+                        override fun onFinish() {
+                            AllowSend = true
+                            this.cancel()
+                        }
 
-        //degrees/Px conversion rate 8.37
-        if (FaceBoundsOverlay.centerX > width / 2 + offset_x || FaceBoundsOverlay.centerX < width / 2 - offset_x ||
-            FaceBoundsOverlay.centerY > length / 2 + offset_y || FaceBoundsOverlay.centerY < width / 2 - offset_y
-        ) {
-            var bit_z : Int = 0
-            var bit_y : Int = 0
-            if(FaceBoundsOverlay.centerX > width / 2 + offset_x ) {
-                //update pan_servo
-                //get px difference
-                //compute px to degrees
-                //add degrees to current pan_servo position
-                //put into a var
-            } else {
-                //update pan_servo
-                //get px difference
-                //compute px to degrees
-                //add degrees to current pan_servo position
-                //put into a var
+                        override fun onTick(millisUntilFinished: Long) {
+                        }
+                    }.start()
+//                    Log.e("AllowSend", AllowSend.toString())
+                }
             }
-            if(FaceBoundsOverlay.centerY > length/2 + offset_y) {
-                //update tilt_servo
-                //get px difference
-                //compute px to degrees
-                //add degrees to current tilt_servo position
-                //put into a var
-            } else {
-                //update tilt_servo
-                //get px difference
-                //compute px to degrees
-                //add degrees to current tilt_servo position
-                //put into a var
-            }
-            sendCommand("~d_${bit_z}" + "_${bit_y}_#!")
-
         }
 
 
@@ -351,6 +373,7 @@ class MAIN : Activity(), SensorEventListener {
                 (degrees_orientationAngles[1]).toString()+ "y: " +
                 (degrees_orientationAngles[2]).toString())*/
     }
+
 
     private fun calibrateSensors() {
         //210f to compensate when inverting the Z- coordinate map in order to properly send the right angles to the Dynamixel AX-12+
@@ -416,10 +439,10 @@ class MAIN : Activity(), SensorEventListener {
             val obj_z = objCoords?.get(0)
             val obj_y = objCoords?.get(1)
             val bit_z: Double
-            if (getAngle(0) < 150f) {
-                bit_z = obj_z!!.div(0.293) - phone_to_servo_deg_errbitsz
+            bit_z = if (getAngle(0) < 150f) {
+                obj_z!!.div(0.293) - phone_to_servo_deg_errbitsz
             } else {
-                bit_z = obj_z!!.div(0.293) + phone_to_servo_deg_errbitsz
+                obj_z!!.div(0.293) + phone_to_servo_deg_errbitsz
             }
 
             val bit_y = obj_y!!.div(0.293) + phone_to_servo_deg_errbitsy
@@ -429,7 +452,18 @@ class MAIN : Activity(), SensorEventListener {
             pan_servo = bit_z.toInt()
             tilt_servo = bit_y.toInt()
 
-            sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
+            if (AllowSend) {
+                sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
+                AllowSend = false //give motors time to move before sending again
+                object : CountDownTimer(5000, 1000) {
+                    override fun onFinish() {
+                        AllowSend = true
+                        this.cancel()
+                    }
+                    override fun onTick(millisUntilFinished: Long) {
+                    }
+                }.start()
+            }
             /* Using endless turn mode
             var degrees_turnZ = curZ - obj_z!!
             var turn_timeZ = 0.0
