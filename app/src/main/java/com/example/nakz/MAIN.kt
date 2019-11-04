@@ -115,7 +115,7 @@ class MAIN : Activity(), SensorEventListener {
         val deg_from_px = 8.37f
 
         //offset (in px) for pan-tilt face detection
-        val offset_x = 1200f
+        val offset_x = 700f
         val offset_y = 500f
 
         //regulating sending of commands 
