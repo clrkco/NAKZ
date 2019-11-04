@@ -56,33 +56,13 @@ class MAIN : Activity(), SensorEventListener {
     private var width: Int = 0
     private var length: Int = 0
 
-    //motor positions
-    private var pan_servo = 150
-    private var tilt_servo = 150
-    private var right_shoulder = 150
-    private var left_shoulder = 150
-    private var right_arm = 150
-    private var left_arm = 150
-    private var right_elbow = 150
-    private var left_elbow = 150
-
     //compass
     private lateinit var sensorManager: SensorManager
     private val accelerometerReading = FloatArray(3)
     private val magnetometerReading = FloatArray(3)
     private val rotationMatrix = FloatArray(9)
     private val orientationAngles = FloatArray(3)
-    private var degreesOrientationAngles = DoubleArray(3)
 
-    //for sensor calibration
-    private var init_y_constant: Double = 0.0
-    private var init_z_constant: Double = 0.0
-    private var new_z_constant: Double = 0.0     //z constant to be added to z orientation
-    private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
-    private var add_or_sub_z: Boolean = false //true add, false sub
-    private var add_or_sub_y: Boolean = false //true add, false sub
-    private var phone_to_servo_deg_errbitsz: Int = 25
-    private var phone_to_servo_deg_errbitsy: Int = 0
 
     //FACE DETECTION MODULE
     private val faceDetector: FaceDetector by lazy {
@@ -91,6 +71,7 @@ class MAIN : Activity(), SensorEventListener {
 
 
     companion object {
+        private var degreesOrientationAngles = DoubleArray(3)
         var myUUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         var bluetoothSocket: BluetoothSocket? = null
         lateinit var progress: ProgressDialog
@@ -120,6 +101,26 @@ class MAIN : Activity(), SensorEventListener {
 
         //regulating sending of commands 
         var AllowSend: Boolean = true
+
+        //for sensor calibration
+        private var init_y_constant: Double = 0.0
+        private var init_z_constant: Double = 0.0
+        private var new_z_constant: Double = 0.0     //z constant to be added to z orientation
+        private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
+        private var add_or_sub_z: Boolean = false //true add, false sub
+        private var add_or_sub_y: Boolean = false //true add, false sub
+        private var phone_to_servo_deg_errbitsz: Int = 25
+        private var phone_to_servo_deg_errbitsy: Int = 0
+
+        //motor positions
+        private var pan_servo = 512
+        private var tilt_servo = 512
+        private var right_shoulder = 512
+        private var left_shoulder = 512
+        private var right_arm = 512
+        private var left_arm = 512
+        private var right_elbow = 512
+        private var left_elbow = 512
     }
 
 
@@ -151,7 +152,7 @@ class MAIN : Activity(), SensorEventListener {
         val display: Display = windowManager.defaultDisplay
         width = display.width
         length = display.height
-        Log.i("l and w", "$width $length")
+//        Log.i("l and w", "$width $length")
         setupCamera()
 
     }
@@ -215,6 +216,7 @@ class MAIN : Activity(), SensorEventListener {
         override fun onPreExecute() {
             super.onPreExecute()
             progress = ProgressDialog.show(context, "Connecting", "Please wait.")
+            AllowSend = false
         }
 
         override fun doInBackground(vararg p0: Void?): String? {
@@ -240,7 +242,49 @@ class MAIN : Activity(), SensorEventListener {
                 t.show()
                 //Log.i("data","couldn't connect")
             } else {
+                //send init servos to arduino
+                var input = "z"
+                if (bluetoothSocket != null) {
+                    try {
+                        bluetoothSocket!!.outputStream.write(input.toByteArray())
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+                //wait for motors to configure
+                Thread.sleep(3000)
+
+                //calibrate sensors
+                init_z_constant = degreesOrientationAngles[0]
+                init_y_constant = degreesOrientationAngles[2]
+
+                if (init_z_constant < 150f) {
+                    new_z_constant = 210f - init_z_constant
+                    add_or_sub_z = true
+                } else if (init_z_constant > 150f) {
+                    new_z_constant = init_z_constant - 210f
+                    add_or_sub_z = false
+                }
+                if (init_y_constant < 150f) {
+                    new_y_constant = 150f - init_y_constant
+                    add_or_sub_y = true
+                } else if (init_y_constant > 150f) {
+                    new_y_constant = init_y_constant - 150f
+                    add_or_sub_y = false
+                }
+
+                tilt_servo = 250
+                input = "~d_512_250_#!"
+                if (bluetoothSocket != null) {
+                    try {
+                        bluetoothSocket!!.outputStream.write(input.toByteArray())
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+                Thread.sleep(1000)
                 isConnected = true
+                AllowSend = true    //only allow sending after initializing servos
             }
             progress.dismiss()
         }
