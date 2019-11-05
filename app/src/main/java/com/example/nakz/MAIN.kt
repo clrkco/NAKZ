@@ -252,7 +252,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.sleep(3000)
+                Thread.this.sleep(3000)
 
                 //calibrate sensors
                 init_z_constant = degreesOrientationAngles[0]
@@ -272,7 +272,8 @@ class MAIN : Activity(), SensorEventListener {
                     new_y_constant = init_y_constant - 150f
                     add_or_sub_y = false
                 }
-
+                Log.i("Calibrate Sensors", "Calibrated")
+                
                 tilt_servo = 250
                 input = "~d_512_250_#!"
                 if (bluetoothSocket != null) {
@@ -282,7 +283,8 @@ class MAIN : Activity(), SensorEventListener {
                         e.printStackTrace()
                     }
                 }
-                Thread.sleep(1000)
+                
+                Thread.this.sleep(1000)
                 isConnected = true
                 AllowSend = true    //only allow sending after initializing servos
             }
