@@ -21,7 +21,7 @@
         android:contentDescription="@string/todo"
         android:scrollbarSize="1dp"
         android:translationZ="4dp"
-        android:visibility="visible" />
+        android:visibility="invisible" />
 
     <com.otaliastudios.cameraview.CameraView
         android:id="@+id/cameraView"

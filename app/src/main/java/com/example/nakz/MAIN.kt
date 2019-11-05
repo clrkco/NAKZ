@@ -96,8 +96,8 @@ class MAIN : Activity(), SensorEventListener {
         val deg_from_px = 8.37f
 
         //offset (in px) for pan-tilt face detection
-        val offset_x = 700f
-        val offset_y = 500f
+        val offset_x = 500f
+        val offset_y = 380f
 
         //regulating sending of commands 
         var AllowSend: Boolean = true
@@ -161,10 +161,10 @@ class MAIN : Activity(), SensorEventListener {
     private fun setupCamera() {
         cameraView.facing = Facing.FRONT
         cameraView.addFrameProcessor {
-            Log.i(
-                "orientation",
-                FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
-            )
+//            Log.i(
+//                "orientation",
+//                FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
+//            )
 //            Log.i(
 //                "offset",
 //                FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString()
@@ -241,6 +241,36 @@ class MAIN : Activity(), SensorEventListener {
                 val t = Toast.makeText(context, "Could not connect", Toast.LENGTH_SHORT)
                 t.show()
                 //Log.i("data","couldn't connect")
+//                AllowSend = true //delete after testing
+
+                Log.i("Before", "Before Thread 3000")
+                //wait for motors to configure
+                Thread.sleep(3000)
+                Log.i("After", "After Thread 3000")
+                //calibrate sensors
+                init_z_constant = degreesOrientationAngles[0]
+                init_y_constant = degreesOrientationAngles[2]
+
+                if (init_z_constant < 150f) {
+                    new_z_constant = 210f - init_z_constant
+                    add_or_sub_z = true
+                } else if (init_z_constant > 150f) {
+                    new_z_constant = init_z_constant - 210f
+                    add_or_sub_z = false
+                }
+                if (init_y_constant < 150f) {
+                    new_y_constant = 150f - init_y_constant
+                    add_or_sub_y = true
+                } else if (init_y_constant > 150f) {
+                    new_y_constant = init_y_constant - 150f
+                    add_or_sub_y = false
+                }
+                Log.i("Calibrate Sensors", "Calibrated")
+
+                Thread.sleep(3000)
+                Log.i("After 1k", "After Thread 1k")
+                isConnected = true
+                AllowSend = true    //only allow sending after initializing servos
             } else {
                 //send init servos to arduino
                 var input = "z"
@@ -252,7 +282,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.this.sleep(3000)
+                Thread.sleep(3000)
 
                 //calibrate sensors
                 init_z_constant = degreesOrientationAngles[0]
@@ -284,7 +314,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 
-                Thread.this.sleep(1000)
+                Thread.sleep(1000)
                 isConnected = true
                 AllowSend = true    //only allow sending after initializing servos
             }
@@ -358,11 +388,8 @@ class MAIN : Activity(), SensorEventListener {
             else
                 degreesOrientationAngles[index] = a * 57.2958
         }
-//        Log.i(
-//            "goes in",
-//            (FaceBoundsOverlay.centerX > width / 2f + offset_x).toString() + " " + (FaceBoundsOverlay.centerX < width / 2f - offset_x).toString() + " " +
-//                    (FaceBoundsOverlay.centerY > length / 2f + offset_y).toString() + " " + (FaceBoundsOverlay.centerY < length / 2f - offset_y).toString()
-//        )
+//
+//        Log.i("AllowSend" , AllowSend.toString())
         if (AllowSend) {
             //degrees/Px conversion rate 8.37
             if (FaceBoundsOverlay.centerX > width / 2f + offset_x || FaceBoundsOverlay.centerX < width / 2f - offset_x ||
@@ -391,8 +418,8 @@ class MAIN : Activity(), SensorEventListener {
                     val deg_from_pixels = diff_in_pixels * deg_from_px
                     tilt_servo += deg_from_pixels.toInt()
                 }
-//                Log.i("isConnected" , isConnected.toString())
-                if (isConnected && AllowSend) { //change isConnected when Arduino is present
+//                Log.i("isConnected" , isConnected.toString() + " " + AllowSend.toString())
+                if (!isConnected && AllowSend) { //change isConnected when Arduino is present
                     Log.i("sending command", "sending")
                     sendCommand("~d_${pan_servo}" + "_${tilt_servo}_#!")
                     AllowSend = false
