@@ -1,4 +1,4 @@
-#include <DynamixelSerial1.h>
+#include <DynamixelSerial.h>
 #define BUFFERSIZE 127
 #define PAN_SERVO 15
 #define TILT_SERVO 14
@@ -16,6 +16,7 @@ String p_position,t_position;
 void setup() {
   Serial.begin(9600);
   Serial2.begin(9600);
+  Dynamixel.setSerial(&Serial1);
   Dynamixel.begin(1000000,2); 
   Dynamixel.torqueStatus(PAN_SERVO,ON);
   Dynamixel.torqueStatus(TILT_SERVO,ON);
