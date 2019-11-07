@@ -1,5 +1,6 @@
 package com.example.nakz
 
+import android.Manifest
 import android.app.Activity
 import android.app.ProgressDialog
 import android.bluetooth.BluetoothAdapter
@@ -7,6 +8,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Point
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -24,8 +26,12 @@ import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
-import com.google.cloud.dialogflow.v2beta1.SessionName
-import com.google.cloud.dialogflow.v2beta1.SessionsClient
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.api.gax.core.FixedCredentialsProvider
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.auth.oauth2.ServiceAccountCredentials
+import com.google.cloud.dialogflow.v2beta1.*
 import com.otaliastudios.cameraview.Facing
 import husaynhakeem.io.facedetector.FaceBoundsOverlay
 import husaynhakeem.io.facedetector.FaceDetector
@@ -101,6 +107,7 @@ class MAIN : Activity(), SensorEventListener {
 
         //regulating sending of commands 
         var AllowSend: Boolean = true
+        var AllowFaceTracking: Boolean = true  //disable during Dialogflow interaction
 
         //for sensor calibration
         private var init_y_constant: Double = 0.0
@@ -121,6 +128,11 @@ class MAIN : Activity(), SensorEventListener {
         private var left_arm = 512
         private var right_elbow = 512
         private var left_elbow = 512
+
+        //TTS
+        private const val RECORD_AUDIO_REQUEST_CODE = 101
+        //STT
+        private const val REQUEST_CODE_SPEECH_INPUT = 1000
     }
 
 
@@ -132,9 +144,9 @@ class MAIN : Activity(), SensorEventListener {
         } catch (e: Exception) {
             Log.e("onCreate", "address not found.")
         }
-
+        //CONNECT TO BT
         ConnectToDevice(this).execute()
-        //compass
+        //COMPASS INIT
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
         //bt module
@@ -149,9 +161,31 @@ class MAIN : Activity(), SensorEventListener {
 //        DisconnectBtn.setOnClickListener { disconnect() }
 //        regObjectBtn.setOnClickListener { registerObject(objectEntry.text.toString())}
 
-        imageButton.setOnClickListener{
-            Log.e("Press","press")
+        imageButton.setOnClickListener {
+            //            Log.e("Press","press")
+            speak()
         }
+        //Check recording permissions
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                RECORD_AUDIO_REQUEST_CODE
+            )
+        }
+        // Java V2
+        initV2Chatbot()
+        //TTS Init
+        mTTS = TextToSpeech(applicationContext, TextToSpeech.OnInitListener { status ->
+            if (status != TextToSpeech.ERROR) {
+                mTTS.language = Locale.UK
+            }
+        })
+        //FACE DETECT INIT
         val display: Display = windowManager.defaultDisplay
         width = display.width
         length = display.height
@@ -160,11 +194,79 @@ class MAIN : Activity(), SensorEventListener {
 
     }
 
+    private fun speak() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        intent.putExtra(
+            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+        )
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+
+        try {
+            startActivityForResult(intent, REQUEST_CODE_SPEECH_INPUT)
+        } catch (e: Exception) {
+            Toast.makeText(this, "" + e.message, Toast.LENGTH_SHORT).show()
+        }
+
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            REQUEST_CODE_SPEECH_INPUT -> {
+                if (resultCode == RESULT_OK && null != data) {
+                    val result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    sendMessage(result[0])
+                }
+            }
+        }
+    }
+
+    private fun sendMessage(message: String) {
+
+        // Java V2
+        val queryInput = QueryInput.newBuilder()
+            .setText(TextInput.newBuilder().setText(message).setLanguageCode("en-US")).build()
+        RequestJavaV2Task(this, session!!, sessionsClient!!, queryInput).execute()
+
+    }
+
+    fun callbackV2(response: DetectIntentResponse?) {
+        //
+        if (response != null) {
+            // process aiResponse here
+            val botReply = response.queryResult.fulfillmentText
+            mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
+        } else {
+            val botReply = "There was some communication issue. Please Try again!"
+            mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
+
+    //CHATBOT MODULE
+    private fun initV2Chatbot() {
+        try {
+            val stream = resources.openRawResource(R.raw.test_agent_credentials)
+            val credentials = GoogleCredentials.fromStream(stream)
+            val projectId = (credentials as ServiceAccountCredentials).projectId
+
+            val settingsBuilder = SessionsSettings.newBuilder()
+            val sessionsSettings =
+                settingsBuilder.setCredentialsProvider(FixedCredentialsProvider.create(credentials))
+                    .build()
+            sessionsClient = SessionsClient.create(sessionsSettings)
+            session = SessionName.of(projectId, uuid)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+    }
+
     //FACE DETECT MODULE
     private fun setupCamera() {
         cameraView.facing = Facing.FRONT
         cameraView.addFrameProcessor {
-//            Log.i(
+            //            Log.i(
 //                "orientation",
 //                FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
 //            )
@@ -431,7 +533,7 @@ class MAIN : Activity(), SensorEventListener {
                     tilt_servo += deg_from_pixels.toInt()
                 }
 //                Log.i("isConnected" , isConnected.toString() + " " + AllowSend.toString())
-                if (isConnected && AllowSend) { //change isConnected when Arduino is present
+                if (isConnected && AllowSend && AllowFaceTracking) { //change isConnected when Arduino is present
                     Log.i("sending command", "sending")
                     sendCommand("~d_${pan_servo}" + "_${tilt_servo}_#!")
                     AllowSend = false
@@ -545,6 +647,7 @@ class MAIN : Activity(), SensorEventListener {
                         AllowSend = true
                         this.cancel()
                     }
+
                     override fun onTick(millisUntilFinished: Long) {
                     }
                 }.start()
