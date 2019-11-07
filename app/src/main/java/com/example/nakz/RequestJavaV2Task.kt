@@ -27,6 +27,6 @@ class RequestJavaV2Task internal constructor(internal var activity: Activity, pr
     }
 
     override fun onPostExecute(response: DetectIntentResponse) {
-        (activity as Dialogflow).callbackV2(response)
+        (activity as MAIN).callbackV2(response)
     }
 }
