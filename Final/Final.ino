@@ -1,4 +1,4 @@
-#include <DynamixelSerial.h>
+#include <DynamixelSerial1.h>
 #define BUFFERSIZE 127
 #define PAN_SERVO 15
 #define TILT_SERVO 14
@@ -16,7 +16,6 @@ String p_position,t_position;
 void setup() {
   Serial.begin(9600);
   Serial2.begin(9600);
-  Dynamixel.setSerial(&Serial1);
   Dynamixel.begin(1000000,2); 
   Dynamixel.torqueStatus(PAN_SERVO,ON);
   Dynamixel.torqueStatus(TILT_SERVO,ON);
@@ -46,26 +45,34 @@ void loop() {
     command.toCharArray(command_arr, command.length());
     Serial.println(command);
     if(command_arr[0] == 'z'){  //init
+      Dynamixel.torqueStatus(PAN_SERVO,ON);
+      Dynamixel.torqueStatus(TILT_SERVO,ON);
+      Dynamixel.torqueStatus(RIGHT_SHOULDER,ON);
+      Dynamixel.torqueStatus(LEFT_SHOULDER,ON);
+      Dynamixel.torqueStatus(RIGHT_ARM,ON);
+      Dynamixel.torqueStatus(LEFT_ARM,ON);
+      Dynamixel.torqueStatus(RIGHT_ELBOW,ON);
+      Dynamixel.torqueStatus(LEFT_ELBOW,ON);
       Dynamixel.moveRW(PAN_SERVO,512);
       Dynamixel.action();
       Dynamixel.moveRW(TILT_SERVO,512);
       Dynamixel.action();
       Dynamixel.moveRW(RIGHT_SHOULDER,512);
       Dynamixel.action();
-      delay(300);
+      delay(800);
       Dynamixel.moveRW(RIGHT_ARM,512);
       Dynamixel.action();
       Dynamixel.moveRW(RIGHT_ELBOW,512);
       Dynamixel.action();
       Dynamixel.moveRW(LEFT_SHOULDER,512);
       Dynamixel.action();
-      delay(300);
+      delay(800);
       Dynamixel.moveRW(LEFT_ARM,512);
       Dynamixel.action();
       Dynamixel.moveRW(LEFT_ELBOW,512);
       Dynamixel.action();
     }
-    if(command_arr[0] == '~'){
+    else if(command_arr[0] == '~'){
       inLength = 1;
       if(command_arr[inLength]=='p'){ //pan-tilt
         inLength=3;

@@ -97,7 +97,7 @@ class MAIN : Activity(), SensorEventListener {
 
         //offset (in px) for pan-tilt face detection
         val offset_x = 500f
-        val offset_y = 380f
+        val offset_y = 200f
 
         //regulating sending of commands 
         var AllowSend: Boolean = true
@@ -149,6 +149,9 @@ class MAIN : Activity(), SensorEventListener {
 //        DisconnectBtn.setOnClickListener { disconnect() }
 //        regObjectBtn.setOnClickListener { registerObject(objectEntry.text.toString())}
 
+        imageButton.setOnClickListener{
+            Log.e("Press","press")
+        }
         val display: Display = windowManager.defaultDisplay
         width = display.width
         length = display.height
@@ -273,7 +276,7 @@ class MAIN : Activity(), SensorEventListener {
                 AllowSend = true    //only allow sending after initializing servos
             } else {
                 //send init servos to arduino
-                var input = "z"
+                var input = "z_"
                 if (bluetoothSocket != null) {
                     try {
                         bluetoothSocket!!.outputStream.write(input.toByteArray())
@@ -282,8 +285,17 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.sleep(3000)
+                Thread.sleep(4000)
 
+                if (bluetoothSocket != null) {
+                    try {
+                        bluetoothSocket!!.outputStream.write(input.toByteArray())
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+                //wait for motors to configure
+                Thread.sleep(4000)
                 //calibrate sensors
                 init_z_constant = degreesOrientationAngles[0]
                 init_y_constant = degreesOrientationAngles[2]
@@ -303,7 +315,7 @@ class MAIN : Activity(), SensorEventListener {
                     add_or_sub_y = false
                 }
                 Log.i("Calibrate Sensors", "Calibrated")
-                
+
                 tilt_servo = 250
                 input = "~d_512_250_#!"
                 if (bluetoothSocket != null) {
@@ -313,8 +325,8 @@ class MAIN : Activity(), SensorEventListener {
                         e.printStackTrace()
                     }
                 }
-                
-                Thread.sleep(1000)
+
+                Thread.sleep(3000)
                 isConnected = true
                 AllowSend = true    //only allow sending after initializing servos
             }
@@ -402,28 +414,28 @@ class MAIN : Activity(), SensorEventListener {
 //                Log.i("length", (length / 2f - offset_y).toString())
                 if (FaceBoundsOverlay.centerX > width / 2f + offset_x) { //ccw
                     val diff_in_pixels = FaceBoundsOverlay.centerX - width / 2f
-                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    val deg_from_pixels = diff_in_pixels / deg_from_px
                     pan_servo += deg_from_pixels.toInt()
                 } else {
                     val diff_in_pixels = width / 2f - FaceBoundsOverlay.centerX
-                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    val deg_from_pixels = diff_in_pixels / deg_from_px
                     pan_servo -= deg_from_pixels.toInt()
                 }
                 if (FaceBoundsOverlay.centerY > length / 2f + offset_y) {
                     val diff_in_pixels = FaceBoundsOverlay.centerY - length / 2f
-                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    val deg_from_pixels = diff_in_pixels / deg_from_px
                     tilt_servo -= deg_from_pixels.toInt()
                 } else {
                     val diff_in_pixels = length / 2f - FaceBoundsOverlay.centerY
-                    val deg_from_pixels = diff_in_pixels * deg_from_px
+                    val deg_from_pixels = diff_in_pixels / deg_from_px
                     tilt_servo += deg_from_pixels.toInt()
                 }
 //                Log.i("isConnected" , isConnected.toString() + " " + AllowSend.toString())
-                if (!isConnected && AllowSend) { //change isConnected when Arduino is present
+                if (isConnected && AllowSend) { //change isConnected when Arduino is present
                     Log.i("sending command", "sending")
                     sendCommand("~d_${pan_servo}" + "_${tilt_servo}_#!")
                     AllowSend = false
-                    object : CountDownTimer(3000, 1000) {
+                    object : CountDownTimer(1500, 1000) { //change if want to decrease interval
                         override fun onFinish() {
                             AllowSend = true
                             this.cancel()

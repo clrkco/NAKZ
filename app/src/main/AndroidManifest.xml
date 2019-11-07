@@ -24,7 +24,7 @@
         </activity>
         <activity android:name=".Dialogflow" android:screenOrientation="landscape"/>
         <activity android:name=".FaceDetectMain" android:screenOrientation="landscape"/>
-
+        <activity android:name=".InputResponseTest" android:screenOrientation="landscape"/>
     </application>
 
 </manifest>
