@@ -19,6 +19,7 @@ import android.os.AsyncTask
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.Display
@@ -43,6 +44,8 @@ import kotlinx.android.synthetic.main.compass_main.facesBoundsOverlay
 import java.io.IOException
 import java.lang.Exception
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.concurrent.thread
 
 class MAIN : Activity(), SensorEventListener {
     //TTS
@@ -133,6 +136,12 @@ class MAIN : Activity(), SensorEventListener {
         private const val RECORD_AUDIO_REQUEST_CODE = 101
         //STT
         private const val REQUEST_CODE_SPEECH_INPUT = 1000
+        private var start = false
+
+        //reminder
+        var rTitle: MutableList<String> = ArrayList()
+        var rTime: MutableList<String> = ArrayList()
+        var count = 0
     }
 
 
@@ -165,6 +174,7 @@ class MAIN : Activity(), SensorEventListener {
             //            Log.e("Press","press")
             speak()
         }
+
         //Check recording permissions
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -201,13 +211,13 @@ class MAIN : Activity(), SensorEventListener {
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 50000)
 
         try {
             startActivityForResult(intent, REQUEST_CODE_SPEECH_INPUT)
         } catch (e: Exception) {
             Toast.makeText(this, "" + e.message, Toast.LENGTH_SHORT).show()
         }
-
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -216,7 +226,12 @@ class MAIN : Activity(), SensorEventListener {
             REQUEST_CODE_SPEECH_INPUT -> {
                 if (resultCode == RESULT_OK && null != data) {
                     val result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                    sendMessage(result[0])
+                    if (result[0].contains("hello", ignoreCase = true) && !start) {
+                        start = true
+                        sendMessage(result[0])
+                    } else if (start) {
+                        sendMessage(result[0])
+                    }
                 }
             }
         }
@@ -232,15 +247,37 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     fun callbackV2(response: DetectIntentResponse?) {
-        //
         if (response != null) {
             // process aiResponse here
-            val botReply = response.queryResult.fulfillmentText
+            var botReply = response.queryResult.fulfillmentText
+
+            if (botReply.contains("off", ignoreCase = true)) {
+                start = false
+                botReply = "Good Bye"
+            }
+            if (botReply.contains("f_addreminder", ignoreCase = true)) {
+                val temp1 = botReply.substring(14, botReply.indexOf(',', 0, ignoreCase = true))
+                val temp2 = botReply.substring(
+                    botReply.indexOf(',', 0, ignoreCase = true) + 13,
+                    botReply.indexOf(')', 0, ignoreCase = true)
+                )
+                rTitle.add(count, temp1)
+                rTime.add(count, temp2)
+                count += 1
+
+                botReply = "Reminder name $temp1 is set at $temp2"
+            }
             mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
+            while (mTTS.isSpeaking) {
+            }
         } else {
             val botReply = "There was some communication issue. Please Try again!"
             mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
+            while (mTTS.isSpeaking) {
+            }
         }
+        if (start)
+            speak()
     }
 
     //CHATBOT MODULE
