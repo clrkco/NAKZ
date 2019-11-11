@@ -15,6 +15,7 @@ import com.example.nakz.MAIN.Companion.bluetoothAdapter
 import com.example.nakz.MAIN.Companion.bluetoothSocket
 import com.example.nakz.MAIN.Companion.progress
 import io.opencensus.stats.Aggregation
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.input_response.*
 
 import java.io.IOException
@@ -120,6 +121,7 @@ class InputResponseTest: Activity() {
 
     }
     fun pause() {
+        textView2.text = (10000-textView2.text.toString().toInt()).toString()
         timer.cancel()
     }
     fun reset() {

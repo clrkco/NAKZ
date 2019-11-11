@@ -194,6 +194,12 @@ class MAIN : Activity(), SensorEventListener {
 
     }
 
+    override fun onBackPressed() {
+        super.onBackPressed()
+        disconnect()
+        val intent = Intent(this,BluetoothConnect::class.java)
+        startActivity(intent)
+    }
     private fun speak() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(
@@ -264,9 +270,10 @@ class MAIN : Activity(), SensorEventListener {
 
     //FACE DETECT MODULE
     private fun setupCamera() {
-        cameraView.facing = Facing.FRONT
-        cameraView.addFrameProcessor {
-            //            Log.i(
+        try {
+            cameraView.facing = Facing.FRONT
+            cameraView.addFrameProcessor {
+                //            Log.i(
 //                "orientation",
 //                FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
 //            )
@@ -274,15 +281,20 @@ class MAIN : Activity(), SensorEventListener {
 //                "offset",
 //                FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString()
 //            )
-            faceDetector.process(
-                Frame(
-                    data = it.data,
-                    rotation = it.rotation,
-                    size = Size(it.size.width, it.size.height),
-                    format = it.format,
-                    isCameraFacingBack = cameraView.facing == Facing.BACK
+                faceDetector.process(
+                    Frame(
+                        data = it.data,
+                        rotation = it.rotation,
+                        size = Size(it.size.width, it.size.height),
+                        format = it.format,
+                        isCameraFacingBack = cameraView.facing == Facing.BACK
+                    )
                 )
-            )
+            }
+        } catch (e: Exception){
+            disconnect()
+            val intent = Intent(this,BluetoothConnect::class.java)
+            startActivity(intent)
         }
     }
 
@@ -345,37 +357,7 @@ class MAIN : Activity(), SensorEventListener {
             if (!connectSuccess) {
                 val t = Toast.makeText(context, "Could not connect", Toast.LENGTH_SHORT)
                 t.show()
-                //Log.i("data","couldn't connect")
-//                AllowSend = true //delete after testing
 
-                Log.i("Before", "Before Thread 3000")
-                //wait for motors to configure
-                Thread.sleep(3000)
-                Log.i("After", "After Thread 3000")
-                //calibrate sensors
-                init_z_constant = degreesOrientationAngles[0]
-                init_y_constant = degreesOrientationAngles[2]
-
-                if (init_z_constant < 150f) {
-                    new_z_constant = 210f - init_z_constant
-                    add_or_sub_z = true
-                } else if (init_z_constant > 150f) {
-                    new_z_constant = init_z_constant - 210f
-                    add_or_sub_z = false
-                }
-                if (init_y_constant < 150f) {
-                    new_y_constant = 150f - init_y_constant
-                    add_or_sub_y = true
-                } else if (init_y_constant > 150f) {
-                    new_y_constant = init_y_constant - 150f
-                    add_or_sub_y = false
-                }
-                Log.i("Calibrate Sensors", "Calibrated")
-
-                Thread.sleep(3000)
-                Log.i("After 1k", "After Thread 1k")
-                isConnected = true
-                AllowSend = true    //only allow sending after initializing servos
             } else {
                 //send init servos to arduino
                 var input = "z_"
@@ -387,7 +369,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.sleep(4000)
+                Thread.sleep(2500)
 
                 if (bluetoothSocket != null) {
                     try {
@@ -397,7 +379,24 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.sleep(4000)
+                Thread.sleep(2500)
+                input = "y_"
+                if (bluetoothSocket != null) {
+                    try {
+                        bluetoothSocket!!.outputStream.write(input.toByteArray())
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+                Thread.sleep(2500)
+                if (bluetoothSocket != null) {
+                    try {
+                        bluetoothSocket!!.outputStream.write(input.toByteArray())
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+                Thread.sleep(2500)
                 //calibrate sensors
                 init_z_constant = degreesOrientationAngles[0]
                 init_y_constant = degreesOrientationAngles[2]
