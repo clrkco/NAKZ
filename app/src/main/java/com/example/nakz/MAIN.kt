@@ -275,9 +275,11 @@ class MAIN : Activity(), SensorEventListener {
 
                 botReply = "Reminder name $temp1 is set at $temp2"
             } else if(botReply.contains("f_findobject",ignoreCase=true)) {
-                Log.i("Object" ,botReply.substring(13,botReply.length))
+                findObject(botReply.substring(13,botReply.length))
+                start = false
+                AllowFaceTracking = true
             } else if(botReply.contains("f_registerObject", ignoreCase = true)) {
-
+                registerObject(botReply.substring(17,botReply.length))
             }
             mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
             while (mTTS.isSpeaking) {
