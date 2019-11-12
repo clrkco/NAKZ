@@ -96,9 +96,9 @@ class MAIN : Activity(), SensorEventListener {
 
         //map of object coordinates (Z,Y)
         var obj_coordinate_map: MutableMap<String, FloatArray> = mutableMapOf(
-            "medicinebox" to floatArrayOf(82f, 72f),
-            "aircon" to floatArrayOf(190f, 72f),
-            "tv" to floatArrayOf(300f, 50f)
+//            "medicinebox" to floatArrayOf(82f, 72f),
+//            "aircon" to floatArrayOf(190f, 72f),
+//            "tv" to floatArrayOf(300f, 50f)
         )
 
         //degrees conversion rate
@@ -218,7 +218,7 @@ class MAIN : Activity(), SensorEventListener {
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 50000)
+//        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 50000)
 
         try {
             startActivityForResult(intent, REQUEST_CODE_SPEECH_INPUT)
@@ -274,6 +274,9 @@ class MAIN : Activity(), SensorEventListener {
                 count += 1
 
                 botReply = "Reminder name $temp1 is set at $temp2"
+            } else if(botReply.contains("f_findobject",ignoreCase=true)) {
+                Log.i("Object" ,botReply.substring(13,botReply.length))
+            } else if(botReply.contains("f_registerObject", ignoreCase = true)) {
 
             }
             mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
@@ -624,6 +627,7 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     private fun getAngle(index: Int): Float {
+        //0 for z axis, 2 for y axis
         //additional minDegrees(360f,*angle*) in order to invert coordinate system for AX12 = ID 14
         val cur = degreesOrientationAngles[index]
         if (index == 0) {
@@ -681,7 +685,7 @@ class MAIN : Activity(), SensorEventListener {
             if (AllowSend) {
                 sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
                 AllowSend = false //give motors time to move before sending again
-                object : CountDownTimer(5000, 1000) {
+                object : CountDownTimer(3000, 1000) {
                     override fun onFinish() {
                         AllowSend = true
                         this.cancel()
@@ -722,49 +726,43 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     /*Use this function to register POIs */
-//    private fun registerObject(newObject : String){
-//        var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(),"")
-//        if(!obj_coordinate_map.containsKey(objName)){
-//            obj_coordinate_map[objName] = floatArrayOf(getAngle(0),getAngle(2))
-//        } else
-//            Toast.makeText(this, "Object already registered.", Toast.LENGTH_SHORT).show()
-//    }
-//
-//    private fun compareCoord(curCoord: Float, obj_yz: Float): Boolean {
-//        val lowerV = minDegrees(obj_yz, margin_of_error)
-//        val higherV = addDegrees(obj_yz, margin_of_error)
-//        var objectWithinBounds = false
-//        if (higherV < lowerV) {
-//            if (curCoord in lowerV..359f || curCoord in 0f..higherV) //if lowerV reduces beyond 0
-//                objectWithinBounds = true
-//        } else {
-//            if (curCoord in lowerV..higherV)
-//                objectWithinBounds = true
-//        }
-//        return objectWithinBounds
-//    }
-//
-//    private fun determineObject(objectName: String): Boolean { //return true if object is found
-//        var objectFound = false
-//        //MEDICINE BOX
-//        try {
-//            val objCoords = obj_coordinate_map[objectName]
-//            val obj_z = objCoords?.get(0)
-//            val obj_y = objCoords?.get(1)
-//            //                curY <= obj_y!! + margin_of_error && curY >= obj_y - margin_of_error)
-//
-//            if (compareCoord(getAngle(0), obj_z!!) && compareCoord(getAngle(2), obj_y!!)) {
-//                object_name.text = objectName
-//                objectFound = true
-//            } else {
-//                object_name.text = ""
-//                objectFound = false
-//            }
-//        } catch (ex: Exception) {
-//
-//        }
-//        return objectFound
-//    }
+    private fun registerObject(newObject : String){
+        var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(),"")
+        if(!obj_coordinate_map.containsKey(objName)){
+            obj_coordinate_map[objName] = floatArrayOf(getAngle(0),getAngle(2))
+        } else
+            Toast.makeText(this, "Object already registered.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun compareCoord(curCoord: Float, obj_yz: Float): Boolean {
+        val lowerV = minDegrees(obj_yz, margin_of_error)
+        val higherV = addDegrees(obj_yz, margin_of_error)
+        var objectWithinBounds = false
+        if (higherV < lowerV) {
+            if (curCoord in lowerV..359f || curCoord in 0f..higherV) //if lowerV reduces beyond 0
+                objectWithinBounds = true
+        } else {
+            if (curCoord in lowerV..higherV)
+                objectWithinBounds = true
+        }
+        return objectWithinBounds
+    }
+
+    private fun determineObject(objectName: String): Boolean { //return true if object is found
+        var objectFound = false
+        //MEDICINE BOX
+        try {
+            val objCoords = obj_coordinate_map[objectName]
+            val obj_z = objCoords?.get(0)
+            val obj_y = objCoords?.get(1)
+            //                curY <= obj_y!! + margin_of_error && curY >= obj_y - margin_of_error)
+
+            objectFound = compareCoord(getAngle(0), obj_z!!) && compareCoord(getAngle(2), obj_y!!)
+        } catch (ex: Exception) {
+
+        }
+        return objectFound
+    }
 
     // Compute the three orientation angles based on the most recent readings from
     // the device's accelerometer and magnetometer.
