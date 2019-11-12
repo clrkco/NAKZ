@@ -211,6 +211,7 @@ class MAIN : Activity(), SensorEventListener {
         startActivity(intent)
     }
     private fun speak() {
+        AllowFaceTracking = false
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(
             RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -259,9 +260,10 @@ class MAIN : Activity(), SensorEventListener {
 
             if (botReply.contains("off", ignoreCase = true)) {
                 start = false
-                botReply = "Good Bye"
+                botReply = "Okay! Good Bye"
+                AllowFaceTracking = true //after all convo, allow face tracking again
             }
-            if (botReply.contains("f_addreminder", ignoreCase = true)) {
+            else if (botReply.contains("f_addreminder", ignoreCase = true)) {
                 val temp1 = botReply.substring(14, botReply.indexOf(',', 0, ignoreCase = true))
                 val temp2 = botReply.substring(
                     botReply.indexOf(',', 0, ignoreCase = true) + 13,
@@ -272,6 +274,7 @@ class MAIN : Activity(), SensorEventListener {
                 count += 1
 
                 botReply = "Reminder name $temp1 is set at $temp2"
+
             }
             mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
             while (mTTS.isSpeaking) {
