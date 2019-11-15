@@ -124,7 +124,7 @@ class MAIN : Activity(), SensorEventListener {
         private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
         private var add_or_sub_z: Boolean = false //true add, false sub
         private var add_or_sub_y: Boolean = false //true add, false sub
-        private var phone_to_servo_deg_errbitsz: Int = 25
+        private var phone_to_servo_deg_errbitsz: Int = 0
         private var phone_to_servo_deg_errbitsy: Int = 0
 
         //motor positions
@@ -248,15 +248,16 @@ class MAIN : Activity(), SensorEventListener {
                     if (result[0].contains("hello", ignoreCase = true) && !start) {
                         start = true
                         sendMessage(result[0])
-                    } else if(result[0].contains("show reminder", ignoreCase = true)){
+                    } else if (result[0].contains("show reminder", ignoreCase = true)) {
                         loop = 0
-                        while(loop != count){
+                        while (loop != count) {
                             val temp5 = "Name " + rTitle[loop] + " time " + rTime[loop]
                             mTTS.speak(temp5, TextToSpeech.QUEUE_FLUSH, null, null)
-                            while (mTTS.isSpeaking) {}
+                            while (mTTS.isSpeaking) {
+                            }
                             loop += 1
                         }
-
+                        AllowFaceTracking = true
                     } else if (start) {
                         sendMessage(result[0])
                     }
@@ -298,20 +299,32 @@ class MAIN : Activity(), SensorEventListener {
                     loop = 0
                     while (loop < 999) {
                         if (loop < count) {
-                            if (rTime[loop].substring(0, 1).toInt() - temp2.substring(0, 1).toInt() > 0) {
+                            if (rTime[loop].substring(0, 1).toInt() - temp2.substring(
+                                    0,
+                                    1
+                                ).toInt() > 0
+                            ) {
                                 rTitle.add(loop, temp1)
                                 rTime.add(loop, temp2)
                                 loop = 999
-                            } else if (rTime[loop].substring(0, 1).toInt() - temp2.substring(0, 1).toInt() == 0) {
-                                if(rTime[loop].substring(3, 4).toInt() - temp2.substring(3, 4).toInt() > 0) {
+                            } else if (rTime[loop].substring(0, 1).toInt() - temp2.substring(
+                                    0,
+                                    1
+                                ).toInt() == 0
+                            ) {
+                                if (rTime[loop].substring(3, 4).toInt() - temp2.substring(
+                                        3,
+                                        4
+                                    ).toInt() > 0
+                                ) {
                                     rTitle.add(loop, temp1)
                                     rTime.add(loop, temp2)
                                     loop = 999
                                 }
                             }
-                        } else if(loop != 999){
-                            rTitle.add(loop,temp1)
-                            rTime.add(loop,temp2)
+                        } else if (loop != 999) {
+                            rTitle.add(loop, temp1)
+                            rTime.add(loop, temp2)
                             loop = 999
                         }
                         loop += 1
@@ -330,7 +343,7 @@ class MAIN : Activity(), SensorEventListener {
             } else if (botIntent.contains("smalltalk.greetings.hello", ignoreCase = true)) {
                 gesture = "~g_a_#!"
             }
-                mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
+            mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
 
             AllowSend = false
             sendCommand(gesture)
@@ -357,11 +370,13 @@ class MAIN : Activity(), SensorEventListener {
                 }
             }.start()
 
-            while (mTTS.isSpeaking) {}
+            while (mTTS.isSpeaking) {
+            }
         } else {
             val botReply = "There was some communication issue. Please Try again!"
             mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
-            while (mTTS.isSpeaking) {}
+            while (mTTS.isSpeaking) {
+            }
         }
         if (start)
             speak()
@@ -526,7 +541,8 @@ class MAIN : Activity(), SensorEventListener {
 
                 Thread.sleep(3000)
                 isConnected = true
-
+                pan_servo = 512
+                tilt_servo = 250
             }
             progress.dismiss()
         }
@@ -637,8 +653,14 @@ class MAIN : Activity(), SensorEventListener {
         }
 //
 //        Log.i("AllowSend" , AllowSend.toString())
-        if (AllowSend && FaceBoundsOverlay.centerX != 0f || FaceBoundsOverlay.centerY != 0f || FaceBoundsOverlay.xOffset != 0f || FaceBoundsOverlay.yOffset != 0f) {
+        if (AllowSend && FaceBoundsOverlay.centerX != 0f && FaceBoundsOverlay.centerY != 0f && FaceBoundsOverlay.xOffset != 0f && FaceBoundsOverlay.yOffset != 0f) {
             //degrees/Px conversion rate 8.37
+//            Log.e("Allow FaceTracking: ", AllowFaceTracking.toString())
+//            Log.e("AllowSend: ", AllowSend.toString())
+//            Log.i(
+//                "FaceBoundsOverlay",
+//                FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
+//            )
             if (FaceBoundsOverlay.centerX > width / 2f + offset_x || FaceBoundsOverlay.centerX < width / 2f - offset_x ||
                 FaceBoundsOverlay.centerY > length / 2f + offset_y || FaceBoundsOverlay.centerY < length / 2f - offset_y
             ) {
@@ -667,7 +689,7 @@ class MAIN : Activity(), SensorEventListener {
 //                Log.i("isConnected" , isConnected.toString() + " " + AllowSend.toString())
                 if (isConnected && AllowSend && AllowFaceTracking) { //change isConnected when Arduino is present
 //                    Log.d("Moving Face Track", "Sending Command")
-//                    Log.i("sending command", "sending")
+                    Log.i("Face Track", "sending")
                     sendCommand("~d_${pan_servo}" + "_${tilt_servo}_#!")
                     AllowSend = false
                     object : CountDownTimer(1500, 1000) { //change if want to decrease interval
@@ -744,6 +766,7 @@ class MAIN : Activity(), SensorEventListener {
 
     private fun findObject(objectName: String) {
         //0.293 deg/bit - conversion from angle to bit for AX-12+
+        Log.e("Finding Object", "In Here")
         var objName = objectName.toLowerCase().trim().replace("\\s".toRegex(), "")
 
         try {
@@ -756,33 +779,35 @@ class MAIN : Activity(), SensorEventListener {
             } else {
                 obj_z!!.div(0.293) + phone_to_servo_deg_errbitsz
             }
-
             val bit_y = obj_y!!.div(0.293) + phone_to_servo_deg_errbitsy
 
-
-            Log.e("Sending Command: ", "Z: ${bit_z.toInt()}" + "Y: ${bit_y.toInt()}")
             pan_servo = bit_z.toInt()
             tilt_servo = bit_y.toInt()
+            Log.e("pan_servo", " $pan_servo")
+            Log.e("tilt_servo", " $tilt_servo")
+            Log.e("Sending Command: ", "Z: ${bit_z.toInt()}" + "Y: ${bit_y.toInt()}")
+            AllowSend = false //give motors time to move before sending again
+            sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
+            object : CountDownTimer(5000, 1000) {
+                override fun onFinish() {
+                    FaceBoundsOverlay.facesBounds.clear()
+                    sendCommand("x_")
+                    pan_servo = 512
+                    tilt_servo = 250
+                    AllowSend = true
+                    AllowFaceTracking = true
+                    this.cancel()
+                }
+                override fun onTick(millisUntilFinished: Long) {
+                }
+            }.start()
 
-            if (AllowSend) {
-                sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
-                AllowSend = false //give motors time to move before sending again
-                object : CountDownTimer(5000, 1000) {
-                    override fun onFinish() {
-                        FaceBoundsOverlay.facesBounds.clear()
-                        sendCommand("x_")
-                        tilt_servo = 250
-                        AllowSend = true
-                        AllowFaceTracking = true
-                        this.cancel()
-                    }
-
-                    override fun onTick(millisUntilFinished: Long) {
-                    }
-                }.start()
-            }
         } catch (e: Exception) {
             Toast.makeText(this, "Object not registered.", Toast.LENGTH_SHORT).show()
+            AllowSend = false
+            sendCommand("x_")
+            AllowSend = true
+            AllowFaceTracking = true
         }
     }
 
