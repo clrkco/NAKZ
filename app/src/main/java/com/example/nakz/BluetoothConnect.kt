@@ -61,7 +61,7 @@ class BluetoothConnect: Activity() {
             val device: BluetoothDevice = list[position]
             val address: String = device.address
 
-            val intent = Intent(this,InputResponseTest::class.java) //change to MAIN after test
+            val intent = Intent(this,MAIN::class.java) //change to MAIN after test
             intent.putExtra(EXTRA_ADDRESS, address)
             startActivity(intent)
         }

@@ -22,10 +22,11 @@ import java.io.IOException
 import java.lang.Exception
 import java.util.*
 
-class InputResponseTest: Activity() {
-    val timerSecs = 10000
-    lateinit var timer : CountDownTimer
-    companion object{
+class InputResponseTest : Activity() {
+    val timerSecs = 500
+    lateinit var timer: CountDownTimer
+
+    companion object {
         var myUUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         var bluetoothSocket: BluetoothSocket? = null
         lateinit var progress: ProgressDialog
@@ -52,6 +53,7 @@ class InputResponseTest: Activity() {
         ConnectToDevice(this).execute()
 
     }
+
     private fun sendCommand(input: String) {
         if (bluetoothSocket != null) {
             try {
@@ -61,6 +63,7 @@ class InputResponseTest: Activity() {
             }
         }
     }
+
     private class ConnectToDevice(c: Context) : AsyncTask<Void, Void, String>() {
         private var connectSuccess: Boolean = true
         private val context: Context
@@ -104,9 +107,11 @@ class InputResponseTest: Activity() {
             progress.dismiss()
         }
     }
-    fun start() { 
+
+    fun start() {
+        Log.e("Sent: ", "Sent Command")
         sendCommand("z")
-       timer = object : CountDownTimer(timerSecs.toLong(), 1) {
+        timer = object : CountDownTimer(timerSecs.toLong(), 1) {
             override fun onFinish() {
 
             }
@@ -120,11 +125,14 @@ class InputResponseTest: Activity() {
         timer.start()
 
     }
+
     fun pause() {
-        textView2.text = (10000-textView2.text.toString().toInt()).toString()
+//        textView2.text = textView2.text.toString()
+        textView2.text = (500 - textView2.text.toString().toInt()).toString()
         timer.cancel()
     }
+
     fun reset() {
-        
+
     }
 }
