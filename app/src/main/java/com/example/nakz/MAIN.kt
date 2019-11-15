@@ -38,6 +38,7 @@ import husaynhakeem.io.facedetector.FaceBoundsOverlay
 import husaynhakeem.io.facedetector.FaceDetector
 import husaynhakeem.io.facedetector.models.Frame
 import husaynhakeem.io.facedetector.models.Size
+import io.opencensus.stats.Aggregation
 import kotlinx.android.synthetic.main.compass_main.*
 import kotlinx.android.synthetic.main.compass_main.cameraView
 import kotlinx.android.synthetic.main.compass_main.facesBoundsOverlay
@@ -61,6 +62,7 @@ class MAIN : Activity(), SensorEventListener {
     val webIntent: Intent = Uri.parse("www.google.com").let { webpage ->
         Intent(Intent.ACTION_VIEW, webpage)
     }
+
     //Screen size
     private var width: Int = 0
     private var length: Int = 0
@@ -102,11 +104,11 @@ class MAIN : Activity(), SensorEventListener {
         )
 
         //degrees conversion rate
-        val deg_from_px = 8.37f
+        val deg_from_px = 11.37f
 
         //offset (in px) for pan-tilt face detection
-        val offset_x = 500f
-        val offset_y = 200f
+        val offset_x = 450f
+        val offset_y = 100f
 
         //regulating sending of commands 
         var AllowSend: Boolean = true
@@ -157,21 +159,24 @@ class MAIN : Activity(), SensorEventListener {
         ConnectToDevice(this).execute()
         //COMPASS INIT
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-
-        //bt module
-//        findObjectBtn.setOnClickListener { findObject(objectEntry.text.toString()) }
-//        objectEntry.setOnFocusChangeListener { _: View, b: Boolean ->
-//            if (b) {
-//                objectEntry.text.clear()
-//            } else
-//                objectEntry.setText("Object Name")
-//        }
-//        setConstantBtn.setOnClickListener { calibrateSensors() }
-//        DisconnectBtn.setOnClickListener { disconnect() }
-//        regObjectBtn.setOnClickListener { registerObject(objectEntry.text.toString())}
-
+        button.setOnClickListener {
+            calibrateSensors()
+            tilt_servo = 250
+            val input = "~d_512_250_#!"
+            if (bluetoothSocket != null) {
+                try {
+                    bluetoothSocket!!.outputStream.write(input.toByteArray())
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+            AllowSend = true    //only allow sending after initializing servos
+            AllowFaceTracking = true
+            button.visibility = View.INVISIBLE
+        }
         imageButton.setOnClickListener {
             //            Log.e("Press","press")
+            AllowFaceTracking = false
             speak()
         }
 
@@ -207,11 +212,12 @@ class MAIN : Activity(), SensorEventListener {
     override fun onBackPressed() {
         super.onBackPressed()
         disconnect()
-        val intent = Intent(this,BluetoothConnect::class.java)
+        val intent = Intent(this, BluetoothConnect::class.java)
         startActivity(intent)
     }
+
     private fun speak() {
-        AllowFaceTracking = false
+
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(
             RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -262,8 +268,7 @@ class MAIN : Activity(), SensorEventListener {
                 start = false
                 botReply = "Okay! Good Bye"
                 AllowFaceTracking = true //after all convo, allow face tracking again
-            }
-            else if (botReply.contains("f_addreminder", ignoreCase = true)) {
+            } else if (botReply.contains("f_addreminder", ignoreCase = true)) {
                 val temp1 = botReply.substring(14, botReply.indexOf(',', 0, ignoreCase = true))
                 val temp2 = botReply.substring(
                     botReply.indexOf(',', 0, ignoreCase = true) + 13,
@@ -274,12 +279,13 @@ class MAIN : Activity(), SensorEventListener {
                 count += 1
 
                 botReply = "Reminder name $temp1 is set at $temp2"
-            } else if(botReply.contains("f_findobject",ignoreCase=true)) {
-                findObject(botReply.substring(13,botReply.length))
+            } else if (botReply.contains("f_findobject", ignoreCase = true)) {
+                findObject(botReply.substring(13, botReply.length))
                 start = false
-                AllowFaceTracking = true
-            } else if(botReply.contains("f_registerObject", ignoreCase = true)) {
-                registerObject(botReply.substring(17,botReply.length))
+                botReply = "Finding" + botReply.substring(13, botReply.length)
+            } else if (botReply.contains("f_registerObject", ignoreCase = true)) {
+                registerObject(botReply.substring(17, botReply.length))
+                botReply = botReply.substring(17, botReply.length) + " registered"
             }
             mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
             while (mTTS.isSpeaking) {
@@ -318,14 +324,19 @@ class MAIN : Activity(), SensorEventListener {
         try {
             cameraView.facing = Facing.FRONT
             cameraView.addFrameProcessor {
-                //            Log.i(
-//                "orientation",
-//                FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
-//            )
-//            Log.i(
-//                "offset",
-//                FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString()
-//            )
+//                Log.i(
+//                    "orientation",
+//                    FaceBoundsOverlay.centerX.toString() + " " + FaceBoundsOverlay.centerY.toString()
+//                )
+//                Log.i(
+//                    "offset",
+//                    FaceBoundsOverlay.xOffset.toString() + " " + FaceBoundsOverlay.yOffset.toString()
+//                )
+
+                if (FaceBoundsOverlay.centerX < 150f || FaceBoundsOverlay.centerX > width - 200f || FaceBoundsOverlay.centerY == 0f)
+                    FaceBoundsOverlay.centerX = 0f
+                if (FaceBoundsOverlay.centerY < 150f || FaceBoundsOverlay.centerY > length - 150f || FaceBoundsOverlay.centerX == 0f)
+                    FaceBoundsOverlay.centerY = 0f
                 faceDetector.process(
                     Frame(
                         data = it.data,
@@ -335,36 +346,13 @@ class MAIN : Activity(), SensorEventListener {
                         isCameraFacingBack = cameraView.facing == Facing.BACK
                     )
                 )
+
             }
-        } catch (e: Exception){
+        } catch (e: Exception) {
             disconnect()
-            val intent = Intent(this,BluetoothConnect::class.java)
+            val intent = Intent(this, BluetoothConnect::class.java)
             startActivity(intent)
         }
-    }
-
-    // Bluetooth Module
-    private fun sendCommand(input: String) {
-        if (bluetoothSocket != null) {
-            try {
-                bluetoothSocket!!.outputStream.write(input.toByteArray())
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun disconnect() {
-        if (bluetoothSocket != null) {
-            try {
-                bluetoothSocket!!.close()
-                bluetoothSocket = null
-                isConnected = false
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-        finish()
     }
 
     private class ConnectToDevice(c: Context) : AsyncTask<Void, Void, String>() {
@@ -424,7 +412,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.sleep(2500)
+                Thread.sleep(3500)
                 input = "y_"
                 if (bluetoothSocket != null) {
                     try {
@@ -433,7 +421,7 @@ class MAIN : Activity(), SensorEventListener {
                         e.printStackTrace()
                     }
                 }
-                Thread.sleep(2500)
+                Thread.sleep(4500)
                 if (bluetoothSocket != null) {
                     try {
                         bluetoothSocket!!.outputStream.write(input.toByteArray())
@@ -462,22 +450,37 @@ class MAIN : Activity(), SensorEventListener {
                 }
                 Log.i("Calibrate Sensors", "Calibrated")
 
-                tilt_servo = 250
-                input = "~d_512_250_#!"
-                if (bluetoothSocket != null) {
-                    try {
-                        bluetoothSocket!!.outputStream.write(input.toByteArray())
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
 
                 Thread.sleep(3000)
                 isConnected = true
-                AllowSend = true    //only allow sending after initializing servos
+
             }
             progress.dismiss()
         }
+    }
+
+    // Bluetooth Module
+    private fun sendCommand(input: String) {
+        if (bluetoothSocket != null) {
+            try {
+                bluetoothSocket!!.outputStream.write(input.toByteArray())
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun disconnect() {
+        if (bluetoothSocket != null) {
+            try {
+                bluetoothSocket!!.close()
+                bluetoothSocket = null
+                isConnected = false
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+        finish()
     }
 
     //END BLUETOOTH MODULE
@@ -534,6 +537,7 @@ class MAIN : Activity(), SensorEventListener {
     // Get readings from accelerometer and magnetometer. To simplify calculations,
     // consider storing these readings aggs unit vectors.
     override fun onSensorChanged(event: SensorEvent) {
+//        Log.i("servo positions: " , "pan servo: " + pan_servo + " tilt_servo: " + tilt_servo)
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, accelerometerReading, 0, accelerometerReading.size)
         } else if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
@@ -548,7 +552,7 @@ class MAIN : Activity(), SensorEventListener {
         }
 //
 //        Log.i("AllowSend" , AllowSend.toString())
-        if (AllowSend) {
+        if (AllowSend && FaceBoundsOverlay.centerX != 0f && FaceBoundsOverlay.centerY != 0f && FaceBoundsOverlay.xOffset != 0f && FaceBoundsOverlay.yOffset != 0f) {
             //degrees/Px conversion rate 8.37
             if (FaceBoundsOverlay.centerX > width / 2f + offset_x || FaceBoundsOverlay.centerX < width / 2f - offset_x ||
                 FaceBoundsOverlay.centerY > length / 2f + offset_y || FaceBoundsOverlay.centerY < length / 2f - offset_y
@@ -561,23 +565,28 @@ class MAIN : Activity(), SensorEventListener {
                 if (FaceBoundsOverlay.centerX > width / 2f + offset_x) { //ccw
                     val diff_in_pixels = FaceBoundsOverlay.centerX - width / 2f
                     val deg_from_pixels = diff_in_pixels / deg_from_px
-                    pan_servo += deg_from_pixels.toInt()
+                    if (pan_servo + deg_from_pixels.toInt() < 1024)
+                        pan_servo += deg_from_pixels.toInt()
                 } else {
                     val diff_in_pixels = width / 2f - FaceBoundsOverlay.centerX
                     val deg_from_pixels = diff_in_pixels / deg_from_px
-                    pan_servo -= deg_from_pixels.toInt()
+                    if (pan_servo - deg_from_pixels.toInt() > -1)
+                        pan_servo -= deg_from_pixels.toInt()
                 }
                 if (FaceBoundsOverlay.centerY > length / 2f + offset_y) {
                     val diff_in_pixels = FaceBoundsOverlay.centerY - length / 2f
                     val deg_from_pixels = diff_in_pixels / deg_from_px
-                    tilt_servo -= deg_from_pixels.toInt()
+                    if (tilt_servo - deg_from_pixels.toInt() > -1)
+                        tilt_servo -= deg_from_pixels.toInt()
                 } else {
                     val diff_in_pixels = length / 2f - FaceBoundsOverlay.centerY
                     val deg_from_pixels = diff_in_pixels / deg_from_px
-                    tilt_servo += deg_from_pixels.toInt()
+                    if (tilt_servo + deg_from_pixels.toInt() < 430)
+                        tilt_servo += deg_from_pixels.toInt()
                 }
 //                Log.i("isConnected" , isConnected.toString() + " " + AllowSend.toString())
                 if (isConnected && AllowSend && AllowFaceTracking) { //change isConnected when Arduino is present
+                    Log.d("Moving Face Track", "Sending Command")
                     Log.i("sending command", "sending")
                     sendCommand("~d_${pan_servo}" + "_${tilt_servo}_#!")
                     AllowSend = false
@@ -687,9 +696,13 @@ class MAIN : Activity(), SensorEventListener {
             if (AllowSend) {
                 sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
                 AllowSend = false //give motors time to move before sending again
-                object : CountDownTimer(3000, 1000) {
+                object : CountDownTimer(5000, 1000) {
                     override fun onFinish() {
+                        FaceBoundsOverlay.facesBounds.clear()
+                        sendCommand("x_")
+                        tilt_servo = 250
                         AllowSend = true
+                        AllowFaceTracking = true
                         this.cancel()
                     }
 
@@ -728,10 +741,10 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     /*Use this function to register POIs */
-    private fun registerObject(newObject : String){
-        var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(),"")
-        if(!obj_coordinate_map.containsKey(objName)){
-            obj_coordinate_map[objName] = floatArrayOf(getAngle(0),getAngle(2))
+    private fun registerObject(newObject: String) {
+        var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(), "")
+        if (!obj_coordinate_map.containsKey(objName)) {
+            obj_coordinate_map[objName] = floatArrayOf(getAngle(0), getAngle(2))
         } else
             Toast.makeText(this, "Object already registered.", Toast.LENGTH_SHORT).show()
     }

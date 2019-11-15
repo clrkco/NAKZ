@@ -51,12 +51,6 @@ class FaceDetector(private val faceBoundsOverlay: FaceBoundsOverlay) {
 
     private fun convertFrameToImage(frame: Frame):FirebaseVisionImage {
         return FirebaseVisionImage.fromByteArray(frame.data!!, extractFrameMetadata(frame))
-
-//        val bmp = BitmapFactory.decodeByteArray(frame.data,0,frame.data!!.size)
-//        var matrix = Matrix()
-//        matrix.postScale(1f,-1f,bmp.width/2f,bmp.height/2f)
-//        val newbmp = Bitmap.createBitmap(bmp,0,0,bmp.width,bmp.height,matrix,true)
-//        return FirebaseVisionImage.fromBitmap(bmp)
     }
 
     private fun extractFrameMetadata(frame: Frame): FirebaseVisionImageMetadata =

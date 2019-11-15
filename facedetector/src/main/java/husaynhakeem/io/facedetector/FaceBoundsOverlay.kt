@@ -25,7 +25,7 @@ class FaceBoundsOverlay @JvmOverloads constructor(
         attrs: AttributeSet? = null,
         defStyleAttr: Int = 0) : View(ctx, attrs, defStyleAttr) {
 
-    private val facesBounds: MutableList<FaceBounds> = mutableListOf()
+
 
     private val anchorPaint = Paint()
     private val idPaint = Paint()
@@ -143,6 +143,7 @@ class FaceBoundsOverlay @JvmOverloads constructor(
             y * (canvas.height.toFloat() / cameraPreviewHeight)
 
     companion object {
+        val facesBounds: MutableList<FaceBounds> = mutableListOf()
         private const val ANCHOR_RADIUS = 10f
         private const val ID_OFFSET = 50f
         var centerX = 0f

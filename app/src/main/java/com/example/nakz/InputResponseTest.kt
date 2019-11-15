@@ -105,7 +105,7 @@ class InputResponseTest: Activity() {
         }
     }
     fun start() { 
-        sendCommand("z_")
+        sendCommand("z")
        timer = object : CountDownTimer(timerSecs.toLong(), 1) {
             override fun onFinish() {
 
