@@ -9,20 +9,24 @@
     <Button
         android:id="@+id/button"
         android:layout_width="match_parent"
-        android:layout_height="82dp"
-        android:layout_marginStart="300dp"
+        android:layout_height="348dp"
+        android:layout_marginStart="0dp"
+        android:background="#03A9F4"
+        android:fontFamily="@font/roboto_slab_bold"
         android:gravity="clip_horizontal|center|clip_vertical"
-        android:text="Calibrate"
-        android:translationZ="5dp" />
+        android:text="Touch to Start!"
+        android:textSize="80dp"
+        android:translationZ="3dp"
+        android:visibility="visible" />
 
     <ImageButton
         android:id="@+id/imageButton"
-        android:layout_width="280dp"
-        android:layout_height="146dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:background="@drawable/eyes"
         android:scaleType="center"
         android:translationZ="3dp"
-        android:visibility="visible"
+        android:visibility="invisible"
         app:srcCompat="@drawable/eyes" />
 
     <husaynhakeem.io.facedetector.FaceBoundsOverlay
@@ -37,7 +41,6 @@
         android:layout_width="733dp"
         android:layout_height="413dp"
         android:keepScreenOn="true"
-        android:translationZ="1dp"
         android:visibility="visible">
 
     </com.otaliastudios.cameraview.CameraView>

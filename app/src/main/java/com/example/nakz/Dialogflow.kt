@@ -1,7 +1,6 @@
 package com.example.nakz
 
 import android.Manifest
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -15,9 +14,7 @@ import android.widget.Toast
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.Handler
-import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import androidx.appcompat.app.AlertDialog
@@ -35,12 +32,9 @@ import com.google.cloud.dialogflow.v2beta1.SessionName
 import com.google.cloud.dialogflow.v2beta1.SessionsClient
 import com.google.cloud.dialogflow.v2beta1.SessionsSettings
 import com.google.cloud.dialogflow.v2beta1.TextInput
-import kotlinx.android.synthetic.main.activity_main.*
-import org.w3c.dom.Text
 
 import java.lang.Exception
 import java.util.*
-import kotlin.coroutines.coroutineContext
 
 class Dialogflow : AppCompatActivity(), RecognitionCallback {
 
@@ -138,7 +132,7 @@ class Dialogflow : AppCompatActivity(), RecognitionCallback {
 
     private fun initV2Chatbot() {
         try {
-            val stream = resources.openRawResource(R.raw.test_agent_credentials)
+            val stream = resources.openRawResource(R.raw.old_chatbot)
             val credentials = GoogleCredentials.fromStream(stream)
             val projectId = (credentials as ServiceAccountCredentials).projectId
 

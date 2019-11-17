@@ -25,6 +25,10 @@
         <activity android:name=".Dialogflow" android:screenOrientation="landscape"/>
         <activity android:name=".FaceDetectMain" android:screenOrientation="landscape"/>
         <activity android:name=".InputResponseTest" android:screenOrientation="landscape"/>
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
     </application>
 
 </manifest>
