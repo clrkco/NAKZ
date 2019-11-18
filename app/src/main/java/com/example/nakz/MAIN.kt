@@ -17,6 +17,7 @@ import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.provider.ContactsContract
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -27,6 +28,7 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.nakz.models.ContactModel
 import com.google.api.gax.core.FixedCredentialsProvider
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.auth.oauth2.ServiceAccountCredentials
@@ -45,6 +47,9 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 class MAIN : Activity(), SensorEventListener {
+    //CALLING
+    private var contactModelArrayList: ArrayList<ContactModel>? = null
+
     //TTS
     private val uuid = UUID.randomUUID().toString()
     private var chatLayout: LinearLayout? = null
@@ -135,30 +140,28 @@ class MAIN : Activity(), SensorEventListener {
 
 
         //TTS
-        private const val RECORD_AUDIO_REQUEST_CODE = 101
+        const val RECORD_AUDIO_REQUEST_CODE = 101
         //STT
-        private const val REQUEST_CODE_SPEECH_INPUT = 1000
-        private var start = false
+        const val REQUEST_CODE_SPEECH_INPUT = 1000
+        var start = false
 
         //reminder
         var rTitle: MutableList<String> = ArrayList()
         var rTime: MutableList<String> = ArrayList()
         var count = 0
         var loop = 0
-
     }
-
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.compass_main)
+        getContacts()
         try {
             address = intent.getStringExtra(BluetoothConnect.EXTRA_ADDRESS)!!
         } catch (e: Exception) {
             Log.e("onCreate", "address not found.")
         }
         //CONNECT TO BT
-
         ConnectToDevice(this).execute()
         //COMPASS INIT
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -176,7 +179,7 @@ class MAIN : Activity(), SensorEventListener {
             AllowSend = true    //only allow sending after initializing servos
             AllowFaceTracking = true
             button.visibility = View.INVISIBLE
-//            imageButton.visibility = View.VISIBLE
+            imageButton.visibility = View.VISIBLE
         }
         imageButton.setOnClickListener {
             //            Log.e("Press","press")
@@ -188,18 +191,6 @@ class MAIN : Activity(), SensorEventListener {
             speak()
         }
 
-        //Check recording permissions
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.RECORD_AUDIO),
-                RECORD_AUDIO_REQUEST_CODE
-            )
-        }
         // Java V2
         initV2Chatbot()
         //TTS Init
@@ -233,10 +224,11 @@ class MAIN : Activity(), SensorEventListener {
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        intent.putExtra(
-            RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
-            2000
-        )
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 10000)
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1)
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,"Hi There! :) ")
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 30000)
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 10000)
         try {
             startActivityForResult(intent, REQUEST_CODE_SPEECH_INPUT)
         } catch (e: Exception) {
@@ -255,6 +247,10 @@ class MAIN : Activity(), SensorEventListener {
                         sendMessage(result[0])
                     } else if (start) {
                         sendMessage(result[0])
+                    } else {
+                        AllowSend = true
+                        AllowFaceTracking = true
+                        start = false
                     }
                 } else if (resultCode == RESULT_CANCELED) {
                     AllowSend = true
@@ -273,11 +269,13 @@ class MAIN : Activity(), SensorEventListener {
         RequestJavaV2Task(this, session!!, sessionsClient!!, queryInput).execute()
 
     }
-    fun setPTCoords(){ //function to stabilize pan tilt servo coords after talking with chatbot during thread sleep
-        object : CountDownTimer (5000,100){
+
+    private fun setPTCoords() { //function to stabilize pan tilt servo coords after talking with chatbot during thread sleep
+        object : CountDownTimer(5000, 100) {
             override fun onFinish() {
                 AllowFaceTracking = true
             }
+
             override fun onTick(p0: Long) {
                 pan_servo = tempCenterX
                 tilt_servo = tempCenterY
@@ -285,6 +283,8 @@ class MAIN : Activity(), SensorEventListener {
             }
         }.start()
     }
+
+    //CHATBOT MODULE
     fun callbackV2(response: DetectIntentResponse?) {
         if (response != null) {
             // process aiResponse here
@@ -304,7 +304,8 @@ class MAIN : Activity(), SensorEventListener {
                 while (loop != count) {
                     val temp5 = "Name " + rTitle[loop] + " time " + rTime[loop]
                     mTTS.speak(temp5, TextToSpeech.QUEUE_ADD, null, null)
-                    while(mTTS.isSpeaking){}
+                    while (mTTS.isSpeaking) {
+                    }
                     loop += 1
                 }
                 setPTCoords()
@@ -414,7 +415,7 @@ class MAIN : Activity(), SensorEventListener {
             speak()
     }
 
-    //CHATBOT MODULE
+
     private fun initV2Chatbot() {
         try {
             val stream = resources.openRawResource(R.raw.test_agent_credentials)
@@ -476,6 +477,7 @@ class MAIN : Activity(), SensorEventListener {
         }
     }
 
+    /* START OF BLUETOOTH MODULE */
     private class ConnectToDevice(c: Context) : AsyncTask<Void, Void, String>() {
         private var connectSuccess: Boolean = true
         private val context: Context
@@ -524,7 +526,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.sleep(2500)
+                Thread.sleep(3500)
 
                 if (bluetoothSocket != null) {
                     try {
@@ -534,7 +536,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 //wait for motors to configure
-                Thread.sleep(3000)
+                Thread.sleep(3500)
                 input = "y_"
                 if (bluetoothSocket != null) {
                     try {
@@ -543,7 +545,7 @@ class MAIN : Activity(), SensorEventListener {
                         e.printStackTrace()
                     }
                 }
-                Thread.sleep(4500)
+                Thread.sleep(3500)
                 if (bluetoothSocket != null) {
                     try {
                         bluetoothSocket!!.outputStream.write(input.toByteArray())
@@ -714,7 +716,7 @@ class MAIN : Activity(), SensorEventListener {
                 } else if (FaceBoundsOverlay.centerX < width / 2f - offset_x_left) {
                     val diff_in_pixels = width / 2f - FaceBoundsOverlay.centerX
                     val deg_from_pixels = diff_in_pixels / deg_from_px
-                    if (pan_servo - (deg_from_pixels.toInt()+ camera_placement_offset) > -1)
+                    if (pan_servo - (deg_from_pixels.toInt() + camera_placement_offset) > -1)
                         pan_servo -= (deg_from_pixels.toInt() + camera_placement_offset.toInt())
                 }
                 if (FaceBoundsOverlay.centerY > length / 2f + offset_y) {
@@ -906,6 +908,35 @@ class MAIN : Activity(), SensorEventListener {
         SensorManager.getOrientation(rotationMatrix, orientationAngles)
         // "mOrientationAngles" now has up-to-date information.
     }
+
     //END OBJ POINTING MODULE
     /* ----------------------------------------------------------------------------------*/
+    //CALLING MODULE
+    private fun findCallContact(name: String) {
+        val contactName = name.toLowerCase().trim().replace("\\s".toRegex(), "")
+
+    }
+
+    private fun getContacts() {
+        contactModelArrayList = ArrayList()
+        val phones = contentResolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            null,
+            null,
+            null,
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+        )
+        while (phones!!.moveToNext()) {
+            val name =
+                phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+            val phoneNumber =
+                phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+
+            val contactModel = ContactModel()
+            contactModel.setNames(name)
+            contactModel.setNumbers(phoneNumber)
+            Log.d("name>>", "$name  $phoneNumber")
+        }
+        phones.close()
+    }
 }
