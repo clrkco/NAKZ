@@ -131,7 +131,7 @@ class MAIN : Activity(), SensorEventListener {
         private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
         private var add_or_sub_z: Boolean = false //true add, false sub
         private var add_or_sub_y: Boolean = false //true add, false sub
-        private var phone_to_servo_deg_errbitsz: Int = 0
+        private var phone_to_servo_deg_errbitsz: Int = 20
         private var phone_to_servo_deg_errbitsy: Int = 0
 
         //motor positions for pan tilt
@@ -224,11 +224,11 @@ class MAIN : Activity(), SensorEventListener {
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 10000)
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500)
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1)
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT,"Hi There! :) ")
         intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 30000)
-        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 10000)
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500)
         try {
             startActivityForResult(intent, REQUEST_CODE_SPEECH_INPUT)
         } catch (e: Exception) {
@@ -294,8 +294,9 @@ class MAIN : Activity(), SensorEventListener {
             var gesture = ""
             if (botReply.contains("off", ignoreCase = true)) {
                 start = false
-                botReply = "Okay! Good Bye"
+                botReply = "Okay! Talk to you later!"
                 setPTCoords()
+                gesture = "~g_a_#!"
 //                AllowFaceTracking = true
             } else if (botReply.contains("f_showreminder", ignoreCase = true)) {
                 showingReminder = true
@@ -311,6 +312,8 @@ class MAIN : Activity(), SensorEventListener {
                 setPTCoords()
                 start = false
                 AllowSend = true
+
+//                gesture = "~g_2_#!"
             } else if (botReply.contains("f_addreminder", ignoreCase = true)) {
                 val temp1 = botReply.substring(14, botReply.indexOf(',', 0, ignoreCase = true))
                 val temp2 = botReply.substring(
@@ -358,6 +361,7 @@ class MAIN : Activity(), SensorEventListener {
 
                 count += 1
                 botReply = "Reminder name $temp1 is set at $temp2"
+                gesture = "~g_4_#!"
             } else if (botReply.contains("f_findobject", ignoreCase = true)) {
                 val objectExists = findObject(botReply.substring(13, botReply.length))
                 //findObject has setPTCoords built-in
@@ -369,10 +373,19 @@ class MAIN : Activity(), SensorEventListener {
                         "I still don't know where that is yet."
                 }
             } else if (botReply.contains("f_registerObject", ignoreCase = true)) {
-                registerObject(botReply.substring(17, botReply.length))
-                botReply = botReply.substring(17, botReply.length) + " registered"
+                val objectRegistered = registerObject(botReply.substring(17, botReply.length))
+                if(objectRegistered)
+                    botReply = botReply.substring(17, botReply.length) + " registered"
+                else
+                    botReply = "You have already registered this object before. Please choose another name for this object."
+                gesture = "~g_2_#!"
             } else if (botIntent.contains("smalltalk.greetings.hello", ignoreCase = true)) {
                 gesture = "~g_a_#!"
+            } else if(botIntent.contains("jokes.get", ignoreCase = true)){
+                gesture = "~g_1_#!"
+            } else{
+                val rnds = (1..4).random()
+                gesture ="~g_${rnds}_#!"
             }
             if (!showingReminder)
                 mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
@@ -518,25 +531,25 @@ class MAIN : Activity(), SensorEventListener {
             } else {
                 //send init servos to arduino
                 var input = "z_"
-                if (bluetoothSocket != null) {
-                    try {
-                        bluetoothSocket!!.outputStream.write(input.toByteArray())
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-                //wait for motors to configure
-                Thread.sleep(3500)
-
-                if (bluetoothSocket != null) {
-                    try {
-                        bluetoothSocket!!.outputStream.write(input.toByteArray())
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-                //wait for motors to configure
-                Thread.sleep(3500)
+//                if (bluetoothSocket != null) {
+//                    try {
+//                        bluetoothSocket!!.outputStream.write(input.toByteArray())
+//                    } catch (e: IOException) {
+//                        e.printStackTrace()
+//                    }
+//                }
+//                //wait for motors to configure
+//                Thread.sleep(3500)
+//
+//                if (bluetoothSocket != null) {
+//                    try {
+//                        bluetoothSocket!!.outputStream.write(input.toByteArray())
+//                    } catch (e: IOException) {
+//                        e.printStackTrace()
+//                    }
+//                }
+//                //wait for motors to configure
+//                Thread.sleep(3500)
                 input = "y_"
                 if (bluetoothSocket != null) {
                     try {
@@ -711,12 +724,12 @@ class MAIN : Activity(), SensorEventListener {
                 if (FaceBoundsOverlay.centerX > width / 2f + offset_x_right) { //ccw
                     val diff_in_pixels = FaceBoundsOverlay.centerX - width / 2f
                     val deg_from_pixels = diff_in_pixels / deg_from_px
-                    if (pan_servo + deg_from_pixels.toInt() < 1024)
+                    if (pan_servo + deg_from_pixels.toInt() < 900)
                         pan_servo += deg_from_pixels.toInt()
                 } else if (FaceBoundsOverlay.centerX < width / 2f - offset_x_left) {
                     val diff_in_pixels = width / 2f - FaceBoundsOverlay.centerX
                     val deg_from_pixels = diff_in_pixels / deg_from_px
-                    if (pan_servo - (deg_from_pixels.toInt() + camera_placement_offset) > -1)
+                    if (pan_servo - (deg_from_pixels.toInt() + camera_placement_offset) > 100)
                         pan_servo -= (deg_from_pixels.toInt() + camera_placement_offset.toInt())
                 }
                 if (FaceBoundsOverlay.centerY > length / 2f + offset_y) {
@@ -734,7 +747,7 @@ class MAIN : Activity(), SensorEventListener {
                 if (isConnected && AllowSend && AllowFaceTracking) { //change isConnected when Arduino is present
 //                    Log.d("Moving Face Track", "Sending Command")
                     Log.i("Face Track", "sending")
-                    sendCommand("~d_${pan_servo}" + "_${tilt_servo}_#!")
+                    sendCommand("~d_${pan_servo}_${tilt_servo}_#!")
                     AllowSend = false
                     object : CountDownTimer(900, 1000) { //change if want to decrease interval
                         override fun onFinish() {
@@ -819,7 +832,7 @@ class MAIN : Activity(), SensorEventListener {
             val obj_y = objCoords?.get(1)
             val bit_z: Double
             bit_z = if (getAngle(0) < 150f) {
-                obj_z!!.div(0.293) - phone_to_servo_deg_errbitsz
+                obj_z!!.div(0.293) + phone_to_servo_deg_errbitsz
             } else {
                 obj_z!!.div(0.293) + phone_to_servo_deg_errbitsz
             }
@@ -838,7 +851,7 @@ class MAIN : Activity(), SensorEventListener {
 
                 override fun onTick(p0: Long) {
                     Log.e("ticking", "ticking")
-                    pan_servo = bit_z.toInt()
+                    pan_servo = bit_z.toInt() + phone_to_servo_deg_errbitsz
                     tilt_servo = bit_y.toInt()
                 }
             }.start()
@@ -870,12 +883,15 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     /*Use this function to register POIs */
-    private fun registerObject(newObject: String) {
+    private fun registerObject(newObject: String) : Boolean {
         var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(), "")
         if (!obj_coordinate_map.containsKey(objName)) {
             obj_coordinate_map[objName] = floatArrayOf(getAngle(0), getAngle(2))
-        } else
+            return true
+        } else {
             Toast.makeText(this, "Object already registered.", Toast.LENGTH_SHORT).show()
+            return false
+        }
     }
 
     private fun compareCoord(curCoord: Float, obj_yz: Float): Boolean {
