@@ -131,7 +131,7 @@ class MAIN : Activity(), SensorEventListener {
         private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
         private var add_or_sub_z: Boolean = false //true add, false sub
         private var add_or_sub_y: Boolean = false //true add, false sub
-        private var phone_to_servo_deg_errbitsz: Int = 20
+        private var phone_to_servo_deg_errbitsz: Int = 0
         private var phone_to_servo_deg_errbitsy: Int = 0
 
         //motor positions for pan tilt
@@ -778,6 +778,14 @@ class MAIN : Activity(), SensorEventListener {
             new_z_constant = init_z_constant - 210f
             add_or_sub_z = false
         }
+//        if (init_z_constant < 150f) {
+//            new_z_constant = 150f - init_z_constant
+//            add_or_sub_z = true
+//        } else if (init_z_constant > 150f) {
+//            new_z_constant = init_z_constant - 150f
+//            add_or_sub_z = false
+//        }
+
         if (init_y_constant < 150f) {
             new_y_constant = 150f - init_y_constant
             add_or_sub_y = true
@@ -792,6 +800,11 @@ class MAIN : Activity(), SensorEventListener {
         //additional minDegrees(360f,*angle*) in order to invert coordinate system for AX12 = ID 14
         val cur = degreesOrientationAngles[index]
         if (index == 0) {
+//            return if (add_or_sub_z) {
+//                addDegrees(cur.toFloat(), new_z_constant.toFloat())
+//            } else {
+//                minDegrees(cur.toFloat(), new_z_constant.toFloat())
+//            }
             return if (add_or_sub_z) {
                 minDegrees(360f, addDegrees(cur.toFloat(), new_z_constant.toFloat()))
             } else {
@@ -850,7 +863,7 @@ class MAIN : Activity(), SensorEventListener {
                 }
 
                 override fun onTick(p0: Long) {
-                    Log.e("ticking", "ticking")
+//                    Log.e("ticking", "ticking")
                     pan_servo = bit_z.toInt() + phone_to_servo_deg_errbitsz
                     tilt_servo = bit_y.toInt()
                 }
@@ -885,6 +898,7 @@ class MAIN : Activity(), SensorEventListener {
     /*Use this function to register POIs */
     private fun registerObject(newObject: String) : Boolean {
         var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(), "")
+        Log.e("Object Registered: ", " z: " + getAngle(0) + " y: " + getAngle(2))
         if (!obj_coordinate_map.containsKey(objName)) {
             obj_coordinate_map[objName] = floatArrayOf(getAngle(0), getAngle(2))
             return true
