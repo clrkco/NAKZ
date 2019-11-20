@@ -27,6 +27,9 @@ class RequestJavaV2Task internal constructor(internal var activity: Activity, pr
     }
 
     override fun onPostExecute(response: DetectIntentResponse) {
-        (activity as MAIN).callbackV2(response)
+        if(BluetoothConnect.mode)
+            (activity as HOTWORD_MAIN).callbackV2(response)
+        else
+            (activity as MAIN).callbackV2(response)
     }
 }

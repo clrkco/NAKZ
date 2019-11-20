@@ -30,6 +30,7 @@ class BluetoothConnect : Activity() {
 
     companion object {
         val EXTRA_ADDRESS: String = "device_address"
+        var mode = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,10 +88,16 @@ class BluetoothConnect : Activity() {
 
             val device: BluetoothDevice = list[position]
             val address: String = device.address
-
-            val intent = Intent(this, MAIN::class.java) //change to MAIN after test
-            intent.putExtra(EXTRA_ADDRESS, address)
-            startActivity(intent)
+            mode = modeSwitch.isChecked
+            if(mode) {
+                val intent = Intent(this, HOTWORD_MAIN::class.java) //change to MAIN after test
+                intent.putExtra(EXTRA_ADDRESS, address)
+                startActivity(intent)
+            } else{
+                val intent = Intent(this, MAIN::class.java)
+                intent.putExtra(EXTRA_ADDRESS, address)
+                startActivity(intent)
+            }
         }
     }
 
