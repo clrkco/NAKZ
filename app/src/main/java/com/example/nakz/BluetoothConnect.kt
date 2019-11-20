@@ -94,7 +94,7 @@ class BluetoothConnect : Activity() {
                 intent.putExtra(EXTRA_ADDRESS, address)
                 startActivity(intent)
             } else{
-                val intent = Intent(this, MAIN::class.java)
+                val intent = Intent(this, InputResponseTest::class.java)
                 intent.putExtra(EXTRA_ADDRESS, address)
                 startActivity(intent)
             }
