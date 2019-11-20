@@ -242,16 +242,11 @@ class MAIN : Activity(), SensorEventListener {
             REQUEST_CODE_SPEECH_INPUT -> {
                 if (resultCode == RESULT_OK && null != data) {
                     val result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                    if (result[0].contains("hello", ignoreCase = true) && !start) {
-                        start = true
-                        sendMessage(result[0])
-                    } else if (start) {
-                        sendMessage(result[0])
-                    } else {
-                        AllowSend = true
-                        AllowFaceTracking = true
-                        start = false
-                    }
+//                    if (result[0].contains("hello", ignoreCase = true) && !start) {
+//                        start = true
+//                        sendMessage(result[0])
+                    start = true
+                    sendMessage(result[0])
                 } else if (resultCode == RESULT_CANCELED) {
                     AllowSend = true
                     start = false
@@ -271,11 +266,10 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     private fun setPTCoords() { //function to stabilize pan tilt servo coords after talking with chatbot during thread sleep
-        object : CountDownTimer(5000, 100) {
+        object : CountDownTimer(3000, 10) {
             override fun onFinish() {
                 AllowFaceTracking = true
             }
-
             override fun onTick(p0: Long) {
                 pan_servo = tempCenterX
                 tilt_servo = tempCenterY
@@ -288,7 +282,7 @@ class MAIN : Activity(), SensorEventListener {
     fun callbackV2(response: DetectIntentResponse?) {
         if (response != null) {
             // process aiResponse here
-//            Log.i("Response:", response.queryResult.intent.displayName.toString())
+            Log.e("Callback:", response.queryResult.intent.displayName.toString())
             var botIntent = response.queryResult.intent.displayName.toString()
             var botReply = response.queryResult.fulfillmentText
             var gesture = ""
@@ -374,16 +368,16 @@ class MAIN : Activity(), SensorEventListener {
                 }
             } else if (botReply.contains("f_registerObject", ignoreCase = true)) {
                 val objectRegistered = registerObject(botReply.substring(17, botReply.length))
-                if(objectRegistered)
-                    botReply = botReply.substring(17, botReply.length) + " registered"
+                botReply = if(objectRegistered)
+                    botReply.substring(17, botReply.length) + " registered"
                 else
-                    botReply = "You have already registered this object before. Please choose another name for this object."
+                    "You have already registered this object before. Please choose another name for this object."
                 gesture = "~g_2_#!"
             } else if (botIntent.contains("smalltalk.greetings.hello", ignoreCase = true)) {
                 gesture = "~g_a_#!"
             } else if(botIntent.contains("jokes.get", ignoreCase = true)){
                 gesture = "~g_1_#!"
-            } else{
+            } else {
                 val rnds = (1..4).random()
                 gesture ="~g_${rnds}_#!"
             }
@@ -850,7 +844,7 @@ class MAIN : Activity(), SensorEventListener {
                 }
 
                 override fun onTick(p0: Long) {
-                    Log.e("ticking", "ticking")
+//                    Log.e("ticking", "ticking")
                     pan_servo = bit_z.toInt() + phone_to_servo_deg_errbitsz
                     tilt_servo = bit_y.toInt()
                 }
@@ -861,8 +855,6 @@ class MAIN : Activity(), SensorEventListener {
                 override fun onFinish() {
                     FaceBoundsOverlay.facesBounds.clear()
                     sendCommand("x_")
-//                    pan_servo = 512
-//                    tilt_servo = 250
                     AllowSend = true
                     AllowFaceTracking = true
                     this.cancel()
