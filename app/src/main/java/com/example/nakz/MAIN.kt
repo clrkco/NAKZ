@@ -45,6 +45,7 @@ import java.io.IOException
 import java.lang.Exception
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class MAIN : Activity(), SensorEventListener {
     //CALLING
@@ -105,7 +106,7 @@ class MAIN : Activity(), SensorEventListener {
         const val deg_per_ms = 0.03f
 
         //map of object coordinates (Z,Y)
-        var obj_coordinate_map: MutableMap<String, FloatArray> = mutableMapOf(
+        var obj_coordinate_map: HashMap<String, FloatArray> = hashMapOf(
 //            "medicinebox" to floatArrayOf(82f, 72f),
 //            "aircon" to floatArrayOf(190f, 72f),
 //            "tv" to floatArrayOf(300f, 50f)
@@ -131,7 +132,7 @@ class MAIN : Activity(), SensorEventListener {
         private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
         private var add_or_sub_z: Boolean = false //true add, false sub
         private var add_or_sub_y: Boolean = false //true add, false sub
-        private var phone_to_servo_deg_errbitsz: Int = 0
+        private var phone_to_servo_deg_errbitsz: Int = 30
         private var phone_to_servo_deg_errbitsy: Int = 0
 
         //motor positions for pan tilt
@@ -146,16 +147,38 @@ class MAIN : Activity(), SensorEventListener {
         var start = false
 
         //reminder
-        var rTitle: MutableList<String> = ArrayList()
-        var rTime: MutableList<String> = ArrayList()
+        var rTitle: ArrayList<String> = ArrayList()
+        var rTime: ArrayList<String> = ArrayList()
         var count = 0
         var loop = 0
+
+        var timerSecs = (2000..5000).random()
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.compass_main)
-        getContacts()
+//        getContacts()
+        //Blinking
+        var timer = object : CountDownTimer(timerSecs.toLong(),1000){
+            override fun onFinish() {
+                this.cancel()
+                timerSecs = (2000..5000).random()
+                Log.e("OnFinish", "Start again")
+                this.start()
+                imageButton.setBackgroundResource(R.drawable.blink)
+                object : CountDownTimer(700,1000){
+                    override fun onFinish() {
+                        this.cancel()
+                        imageButton.setBackgroundResource(R.drawable.eyes)
+                    }
+                    override fun onTick(p0: Long) {
+                    }
+                }.start()
+            }
+            override fun onTick(p0: Long) {
+            }
+        }.start()
         try {
             address = intent.getStringExtra(BluetoothConnect.EXTRA_ADDRESS)!!
         } catch (e: Exception) {
@@ -208,6 +231,25 @@ class MAIN : Activity(), SensorEventListener {
 //        Log.i("l and w", "$width $length")
         setupCamera()
 
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putSerializable("coordinate_map", obj_coordinate_map)
+        outState.putStringArrayList("rTitle", rTitle)
+        outState.putStringArrayList("rTime", rTime)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        try {
+            obj_coordinate_map =
+                savedInstanceState.getSerializable("coordinate_map") as HashMap<String, FloatArray>
+            rTitle = savedInstanceState.getStringArrayList("rTitle")!!
+            rTime = savedInstanceState.getStringArrayList("rName")!!
+        } catch (e : Exception) {
+            Log.e("OnRestore", "Error restoring state.")
+        }
     }
 
     override fun onBackPressed() {
@@ -266,7 +308,7 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     private fun setPTCoords() { //function to stabilize pan tilt servo coords after talking with chatbot during thread sleep
-        object : CountDownTimer(3000, 10) {
+        object : CountDownTimer(4000, 1) {
             override fun onFinish() {
                 AllowFaceTracking = true
                 this.cancel()
@@ -372,7 +414,7 @@ class MAIN : Activity(), SensorEventListener {
                 botReply = if(objectRegistered)
                     botReply.substring(17, botReply.length) + " registered"
                 else
-                    "You have already registered this object before. Please choose another name for this object."
+                    "You have already registered this object before. Please choose another name for this object and try again!"
                 gesture = "~g_2_#!"
             } else if (botIntent.contains("smalltalk.greetings.hello", ignoreCase = true)) {
                 gesture = "~g_a_#!"
@@ -421,7 +463,7 @@ class MAIN : Activity(), SensorEventListener {
         }
         //by this point, no more tts commands and done saying reminders
         showingReminder = false
-        object : CountDownTimer(2000,1000){
+        object : CountDownTimer(1500,1000){
             override fun onFinish() {
                 this.cancel()
                 if (start)
@@ -531,8 +573,8 @@ class MAIN : Activity(), SensorEventListener {
             if (!connectSuccess) {
                 val t = Toast.makeText(context, "Could not connect", Toast.LENGTH_SHORT)
                 t.show()
-//                val intent = Intent(this.context, BluetoothConnect::class.java)
-//                context.startActivity(intent)
+                val intent = Intent(this.context, BluetoothConnect::class.java)
+                context.startActivity(intent)
             } else {
                 //send init servos to arduino
                 var input = "z_"
@@ -700,7 +742,7 @@ class MAIN : Activity(), SensorEventListener {
 //            FaceBoundsOverlay.centerX = 512f
 //            tilt_servo = 512
 //        }
-        Log.i("Sensor Coordinates: ", "Z: " + getAngle(0) + " Y: " + getAngle(2))
+//        Log.i("Sensor Coordinates: ", "Z: " + getAngle(0) + " Y: " + getAngle(2))
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, accelerometerReading, 0, accelerometerReading.size)
         } else if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
@@ -843,7 +885,7 @@ class MAIN : Activity(), SensorEventListener {
         //0.293 deg/bit - conversion from angle to bit for AX-12+
         Log.e("Finding Object", "In Here")
         var objName = objectName.toLowerCase().trim().replace("\\s".toRegex(), "")
-
+        Log.i("Finding", objName)
         try {
             val objCoords = obj_coordinate_map[objName]
             val obj_z = objCoords?.get(0)
@@ -882,7 +924,7 @@ class MAIN : Activity(), SensorEventListener {
                     sendCommand("x_")
                     AllowSend = true
                     AllowFaceTracking = true
-                    this.cancel()
+//                    this.cancel()
                 }
 
                 override fun onTick(millisUntilFinished: Long) {
@@ -902,7 +944,7 @@ class MAIN : Activity(), SensorEventListener {
     /*Use this function to register POIs */
     private fun registerObject(newObject: String) : Boolean {
         var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(), "")
-        Log.e("Object Registered: ", " z: " + getAngle(0) + " y: " + getAngle(2))
+        Log.e("Object Registered: ", objName)
         if (!obj_coordinate_map.containsKey(objName)) {
             obj_coordinate_map[objName] = floatArrayOf(getAngle(0), getAngle(2))
             return true

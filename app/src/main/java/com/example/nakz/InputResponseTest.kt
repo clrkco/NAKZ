@@ -70,7 +70,6 @@ class InputResponseTest : Activity() {
             override fun onTick(p0: Long) {
                 textView2.text = p0.toString()
             }
-
         }
         ConnectToDevice(this, timer).execute()
 
