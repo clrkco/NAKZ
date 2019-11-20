@@ -269,6 +269,7 @@ class MAIN : Activity(), SensorEventListener {
         object : CountDownTimer(3000, 10) {
             override fun onFinish() {
                 AllowFaceTracking = true
+                this.cancel()
             }
             override fun onTick(p0: Long) {
                 pan_servo = tempCenterX
@@ -395,12 +396,14 @@ class MAIN : Activity(), SensorEventListener {
                     }
                     object : CountDownTimer(1500, 1000) {
                         override fun onFinish() {
+                            this.cancel()
                             AllowSend = true
                         }
 
                         override fun onTick(p0: Long) {
                         }
                     }.start()
+                    this.cancel() //remove this if it bugs out
                 }
 
                 override fun onTick(p0: Long) {
@@ -418,8 +421,16 @@ class MAIN : Activity(), SensorEventListener {
         }
         //by this point, no more tts commands and done saying reminders
         showingReminder = false
-        if (start)
-            speak()
+        object : CountDownTimer(2000,1000){
+            override fun onFinish() {
+                this.cancel()
+                if (start)
+                    speak()
+            }
+            override fun onTick(p0: Long) {
+            }
+        }.start()
+
     }
 
 
@@ -520,8 +531,8 @@ class MAIN : Activity(), SensorEventListener {
             if (!connectSuccess) {
                 val t = Toast.makeText(context, "Could not connect", Toast.LENGTH_SHORT)
                 t.show()
-                val intent = Intent(this.context, BluetoothConnect::class.java)
-                context.startActivity(intent)
+//                val intent = Intent(this.context, BluetoothConnect::class.java)
+//                context.startActivity(intent)
             } else {
                 //send init servos to arduino
                 var input = "z_"
@@ -854,6 +865,7 @@ class MAIN : Activity(), SensorEventListener {
             //set FaceBoundsOverlay to these coords until finish
             object : CountDownTimer(3000, 50) {
                 override fun onFinish() {
+                    this.cancel()
                 }
 
                 override fun onTick(p0: Long) {
