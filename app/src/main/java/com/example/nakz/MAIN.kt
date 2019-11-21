@@ -28,6 +28,11 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.nakz.BluetoothConnect.Companion.count
+import com.example.nakz.BluetoothConnect.Companion.loop
+import com.example.nakz.BluetoothConnect.Companion.obj_coordinate_map
+import com.example.nakz.BluetoothConnect.Companion.rTime
+import com.example.nakz.BluetoothConnect.Companion.rTitle
 import com.example.nakz.models.ContactModel
 import com.google.api.gax.core.FixedCredentialsProvider
 import com.google.auth.oauth2.GoogleCredentials
@@ -106,11 +111,7 @@ class MAIN : Activity(), SensorEventListener {
         const val deg_per_ms = 0.03f
 
         //map of object coordinates (Z,Y)
-        var obj_coordinate_map: HashMap<String, FloatArray> = hashMapOf(
-//            "medicinebox" to floatArrayOf(82f, 72f),
-//            "aircon" to floatArrayOf(190f, 72f),
-//            "tv" to floatArrayOf(300f, 50f)
-        )
+//        var obj_coordinate_map: HashMap<String, FloatArray> = hashMapOf()
 
         //degrees conversion rate
         val deg_from_px = 13.37f
@@ -147,10 +148,10 @@ class MAIN : Activity(), SensorEventListener {
         var start = false
 
         //reminder
-        var rTitle: ArrayList<String> = ArrayList()
-        var rTime: ArrayList<String> = ArrayList()
-        var count = 0
-        var loop = 0
+//        var rTitle: ArrayList<String> = ArrayList()
+//        var rTime: ArrayList<String> = ArrayList()
+//        var count = 0
+//        var loop = 0
 
         var timerSecs = (2000..5000).random()
     }
