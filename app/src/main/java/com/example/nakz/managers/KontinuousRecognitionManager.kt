@@ -3,6 +3,7 @@ package com.example.nakz
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
+import android.media.AudioManager.*
 import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -81,22 +82,22 @@ class KontinuousRecognitionManager(
         speech?.cancel()
     }
 
-    @Suppress("DEPRECATION")
+//    @Suppress("DEPRECATION")
     private fun muteRecognition(mute: Boolean) {
         audioManager.run {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val flag = if (mute) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE
-                adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, flag, 0)
-                adjustStreamVolume(AudioManager.STREAM_ALARM, flag, 0)
-                adjustStreamVolume(AudioManager.STREAM_MUSIC, flag, 0)
-                adjustStreamVolume(AudioManager.STREAM_RING, flag, 0)
-                adjustStreamVolume(AudioManager.STREAM_SYSTEM, flag, 0)
+                val flag = if (mute) ADJUST_MUTE else ADJUST_UNMUTE
+                adjustStreamVolume(STREAM_NOTIFICATION, flag, 0)
+                adjustStreamVolume(STREAM_ALARM, flag, 0)
+                adjustStreamVolume(STREAM_MUSIC, flag, 0)
+                adjustStreamVolume(STREAM_RING, flag, 0)
+                adjustStreamVolume(STREAM_SYSTEM, flag, 0)
             } else {
-                setStreamMute(AudioManager.STREAM_NOTIFICATION, mute)
-                setStreamMute(AudioManager.STREAM_ALARM, mute)
-                setStreamMute(AudioManager.STREAM_MUSIC, mute)
-                setStreamMute(AudioManager.STREAM_RING, mute)
-                setStreamMute(AudioManager.STREAM_SYSTEM, mute)
+                setStreamMute(STREAM_NOTIFICATION, mute)
+                setStreamMute(STREAM_ALARM, mute)
+                setStreamMute(STREAM_MUSIC, mute)
+                setStreamMute(STREAM_RING, mute)
+                setStreamMute(STREAM_SYSTEM, mute)
             }
         }
     }
