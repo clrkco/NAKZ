@@ -106,11 +106,7 @@ class HotwordMain : Activity(), SensorEventListener {
         const val deg_per_ms = 0.03f
 
         //map of object coordinates (Z,Y)
-        var obj_coordinate_map: HashMap<String, FloatArray> = hashMapOf(
-//            "medicinebox" to floatArrayOf(82f, 72f),
-//            "aircon" to floatArrayOf(190f, 72f),
-//            "tv" to floatArrayOf(300f, 50f)
-        )
+//        var obj_coordinate_map: HashMap<String, FloatArray> = hashMapOf()
 
         //degrees conversion rate
         val deg_from_px = 13.37f
@@ -147,10 +143,10 @@ class HotwordMain : Activity(), SensorEventListener {
         var start = false
 
         //reminder
-        var rTitle: ArrayList<String> = ArrayList()
-        var rTime: ArrayList<String> = ArrayList()
-        var count = 0
-        var loop = 0
+//        var rTitle: ArrayList<String> = ArrayList()
+//        var rTime: ArrayList<String> = ArrayList()
+//        var count = 0
+//        var loop = 0
 
         var timerSecs = (2000..5000).random()
     }
@@ -226,18 +222,18 @@ class HotwordMain : Activity(), SensorEventListener {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putSerializable("coordinate_map", obj_coordinate_map)
-        outState.putStringArrayList("rTitle", rTitle)
-        outState.putStringArrayList("rTime", rTime)
+        outState.putSerializable("coordinate_map", BluetoothConnect.obj_coordinate_map)
+        outState.putStringArrayList("rTitle", BluetoothConnect.rTitle)
+        outState.putStringArrayList("rTime",BluetoothConnect. rTime)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         try {
-            obj_coordinate_map =
+            BluetoothConnect.obj_coordinate_map =
                 savedInstanceState.getSerializable("coordinate_map") as HashMap<String, FloatArray>
-            rTitle = savedInstanceState.getStringArrayList("rTitle")!!
-            rTime = savedInstanceState.getStringArrayList("rName")!!
+            BluetoothConnect.rTitle = savedInstanceState.getStringArrayList("rTitle")!!
+            BluetoothConnect.rTime = savedInstanceState.getStringArrayList("rName")!!
         } catch (e : Exception) {
             Log.e("OnRestore", "Error restoring state.")
         }
@@ -328,14 +324,14 @@ class HotwordMain : Activity(), SensorEventListener {
 //                AllowFaceTracking = true
             } else if (botReply.contains("f_showreminder", ignoreCase = true)) {
                 showingReminder = true
-                loop = 0
+                BluetoothConnect.loop = 0
                 botReply = ""
-                while (loop != count) {
-                    val temp5 = "Name " + rTitle[loop] + " time " + rTime[loop]
+                while (BluetoothConnect.loop != BluetoothConnect.count) {
+                    val temp5 = "Name " + BluetoothConnect.rTitle[BluetoothConnect.loop] + " time " + BluetoothConnect.rTime[BluetoothConnect.loop]
                     mTTS.speak(temp5, TextToSpeech.QUEUE_ADD, null, null)
                     while (mTTS.isSpeaking) {
                     }
-                    loop += 1
+                    BluetoothConnect.loop += 1
                 }
                 setPTCoords()
                 start = false
@@ -348,46 +344,46 @@ class HotwordMain : Activity(), SensorEventListener {
                     botReply.indexOf(',', 0, ignoreCase = true) + 13,
                     botReply.indexOf(')', 0, ignoreCase = true) - 6
                 )
-                if (count == 0) {
-                    rTitle.add(count, temp1)
-                    rTime.add(count, temp2)
+                if (BluetoothConnect.count == 0) {
+                    BluetoothConnect.rTitle.add(BluetoothConnect.count, temp1)
+                    BluetoothConnect.rTime.add(BluetoothConnect.count, temp2)
                 } else {
-                    loop = 0
-                    while (loop < 999) {
-                        if (loop < count) {
-                            if (rTime[loop].substring(0, 1).toInt() - temp2.substring(
+                    BluetoothConnect.loop = 0
+                    while (BluetoothConnect.loop < 999) {
+                        if (BluetoothConnect.loop < BluetoothConnect.count) {
+                            if (BluetoothConnect.rTime[BluetoothConnect.loop].substring(0, 1).toInt() - temp2.substring(
                                     0,
                                     1
                                 ).toInt() > 0
                             ) {
-                                rTitle.add(loop, temp1)
-                                rTime.add(loop, temp2)
-                                loop = 999
-                            } else if (rTime[loop].substring(0, 1).toInt() - temp2.substring(
+                                BluetoothConnect.rTitle.add(BluetoothConnect.loop, temp1)
+                                BluetoothConnect.rTime.add(BluetoothConnect.loop, temp2)
+                                BluetoothConnect.loop = 999
+                            } else if (BluetoothConnect.rTime[BluetoothConnect.loop].substring(0, 1).toInt() - temp2.substring(
                                     0,
                                     1
                                 ).toInt() == 0
                             ) {
-                                if (rTime[loop].substring(3, 4).toInt() - temp2.substring(
+                                if (BluetoothConnect.rTime[BluetoothConnect.loop].substring(3, 4).toInt() - temp2.substring(
                                         3,
                                         4
                                     ).toInt() > 0
                                 ) {
-                                    rTitle.add(loop, temp1)
-                                    rTime.add(loop, temp2)
-                                    loop = 999
+                                    BluetoothConnect.rTitle.add(BluetoothConnect.loop, temp1)
+                                    BluetoothConnect.rTime.add(BluetoothConnect.loop, temp2)
+                                    BluetoothConnect.loop = 999
                                 }
                             }
-                        } else if (loop != 999) {
-                            rTitle.add(loop, temp1)
-                            rTime.add(loop, temp2)
-                            loop = 999
+                        } else if (BluetoothConnect.loop != 999) {
+                            BluetoothConnect.rTitle.add(BluetoothConnect.loop, temp1)
+                            BluetoothConnect.rTime.add(BluetoothConnect.loop, temp2)
+                            BluetoothConnect.loop = 999
                         }
-                        loop += 1
+                        BluetoothConnect.loop += 1
                     }
                 }
 
-                count += 1
+                BluetoothConnect.count += 1
                 botReply = "Reminder name $temp1 is set at $temp2"
                 gesture = "~g_4_#!"
             } else if (botReply.contains("f_findobject", ignoreCase = true)) {
@@ -878,7 +874,7 @@ class HotwordMain : Activity(), SensorEventListener {
         var objName = objectName.toLowerCase().trim().replace("\\s".toRegex(), "")
         Log.i("Finding", objName)
         try {
-            val objCoords = obj_coordinate_map[objName]
+            val objCoords = BluetoothConnect.obj_coordinate_map[objName]
             val obj_z = objCoords?.get(0)
             val obj_y = objCoords?.get(1)
             val bit_z: Double
@@ -936,8 +932,8 @@ class HotwordMain : Activity(), SensorEventListener {
     private fun registerObject(newObject: String) : Boolean {
         var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(), "")
         Log.e("Object Registered: ", objName)
-        if (!obj_coordinate_map.containsKey(objName)) {
-            obj_coordinate_map[objName] = floatArrayOf(getAngle(0), getAngle(2))
+        if (!BluetoothConnect.obj_coordinate_map.containsKey(objName)) {
+            BluetoothConnect.obj_coordinate_map[objName] = floatArrayOf(getAngle(0), getAngle(2))
             return true
         } else {
             Toast.makeText(this, "Object already registered.", Toast.LENGTH_SHORT).show()

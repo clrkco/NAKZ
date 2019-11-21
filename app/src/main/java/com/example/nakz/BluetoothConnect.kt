@@ -31,6 +31,12 @@ class BluetoothConnect : Activity() {
     companion object {
         val EXTRA_ADDRESS: String = "device_address"
         var mode = false
+
+        var obj_coordinate_map: HashMap<String, FloatArray> = hashMapOf()
+        var rTitle: ArrayList<String> = ArrayList()
+        var rTime: ArrayList<String> = ArrayList()
+        var count = 0
+        var loop = 0
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,7 +96,7 @@ class BluetoothConnect : Activity() {
             val address: String = device.address
             mode = modeSwitch.isChecked
             if(mode) {
-                val intent = Intent(this, HOTWORD_MAIN::class.java) //change to MAIN after test
+                val intent = Intent(this, HotwordMain::class.java) //change to MAIN after test
                 intent.putExtra(EXTRA_ADDRESS, address)
                 startActivity(intent)
             } else{
