@@ -96,7 +96,7 @@ class MAIN : Activity(), SensorEventListener {
         private var tempCenterX = 0
         private var tempCenterY = 0
 
-        private var degreesOrientationAngles = DoubleArray(3)
+        var degreesOrientationAngles = DoubleArray(3)
         var myUUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         var bluetoothSocket: BluetoothSocket? = null
         lateinit var progress: ProgressDialog
@@ -117,24 +117,24 @@ class MAIN : Activity(), SensorEventListener {
         val deg_from_px = 13.37f
 
         //offset (in px) for pan-tilt face detection
-        val offset_x_left = 350f
-        val offset_x_right = 650f
-        val camera_placement_offset = 20f
-        val offset_y = 100f
+        const val offset_x_left = 350f
+        const val offset_x_right = 650f
+        const val camera_placement_offset = 20f
+        const val offset_y = 100f
 
         //regulating sending of commands 
         var AllowSend: Boolean = true
         var AllowFaceTracking: Boolean = true  //disable during Dialogflow interaction
 
         //for sensor calibration
-        private var init_y_constant: Double = 0.0
-        private var init_z_constant: Double = 0.0
-        private var new_z_constant: Double = 0.0     //z constant to be added to z orientation
-        private var new_y_constant: Double = 0.0    //y constant to be added to y orientation
-        private var add_or_sub_z: Boolean = false //true add, false sub
-        private var add_or_sub_y: Boolean = false //true add, false sub
-        private var phone_to_servo_deg_errbitsz: Int = 30
-        private var phone_to_servo_deg_errbitsy: Int = 0
+        var init_y_constant: Double = 0.0
+        var init_z_constant: Double = 0.0
+        var new_z_constant: Double = 0.0     //z constant to be added to z orientation
+        var new_y_constant: Double = 0.0    //y constant to be added to y orientation
+        var add_or_sub_z: Boolean = false //true add, false sub
+        var add_or_sub_y: Boolean = false //true add, false sub
+        var phone_to_servo_deg_errbitsz: Int = 30
+        var phone_to_servo_deg_errbitsy: Int = 0
 
         //motor positions for pan tilt
         private var pan_servo = 512
@@ -161,11 +161,11 @@ class MAIN : Activity(), SensorEventListener {
         setContentView(R.layout.compass_main)
 //        getContacts()
         //Blinking
-        var timer = object : CountDownTimer(timerSecs.toLong(),1000){
+        object : CountDownTimer(timerSecs.toLong(),1000){
             override fun onFinish() {
                 this.cancel()
-                timerSecs = (2000..5000).random()
-                Log.e("OnFinish", "Start again")
+                timerSecs = (1000..6000).random()
+//                Log.e("OnFinish", timerSecs.toString())
                 this.start()
                 imageButton.setBackgroundResource(R.drawable.blink)
                 object : CountDownTimer(700,1000){
@@ -178,6 +178,7 @@ class MAIN : Activity(), SensorEventListener {
                 }.start()
             }
             override fun onTick(p0: Long) {
+//                Log.i("Time",timerSecs.toString())
             }
         }.start()
         try {
@@ -615,28 +616,28 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }
                 Thread.sleep(2500)
-                //calibrate sensors
-                init_z_constant = degreesOrientationAngles[0]
-                init_y_constant = degreesOrientationAngles[2]
-
-                if (init_z_constant < 150f) {
-                    new_z_constant = 210f - init_z_constant
-                    add_or_sub_z = true
-                } else if (init_z_constant > 150f) {
-                    new_z_constant = init_z_constant - 210f
-                    add_or_sub_z = false
-                }
-                if (init_y_constant < 150f) {
-                    new_y_constant = 150f - init_y_constant
-                    add_or_sub_y = true
-                } else if (init_y_constant > 150f) {
-                    new_y_constant = init_y_constant - 150f
-                    add_or_sub_y = false
-                }
-                Log.i("Calibrate Sensors", "Calibrated")
-
-
-                Thread.sleep(3000)
+//                //calibrate sensors
+//                init_z_constant = degreesOrientationAngles[0]
+//                init_y_constant = degreesOrientationAngles[2]
+//
+//                if (init_z_constant < 150f) {
+//                    new_z_constant = 210f - init_z_constant
+//                    add_or_sub_z = true
+//                } else if (init_z_constant > 150f) {
+//                    new_z_constant = init_z_constant - 210f
+//                    add_or_sub_z = false
+//                }
+//                if (init_y_constant < 150f) {
+//                    new_y_constant = 150f - init_y_constant
+//                    add_or_sub_y = true
+//                } else if (init_y_constant > 150f) {
+//                    new_y_constant = init_y_constant - 150f
+//                    add_or_sub_y = false
+//                }
+//                Log.i("Calibrate Sensors", "Calibrated")
+//
+//
+//                Thread.sleep(3000)
                 isConnected = true
                 tempCenterY = 0
                 tempCenterX = 0
@@ -797,13 +798,15 @@ class MAIN : Activity(), SensorEventListener {
                     Log.i("Face Track", "sending")
                     sendCommand("~d_${pan_servo}_${tilt_servo}_#!")
                     AllowSend = false
-                    object : CountDownTimer(900, 1000) { //change if want to decrease interval
+                    object : CountDownTimer(3000, 30) { //change if want to decrease interval
                         override fun onFinish() {
                             AllowSend = true
                             this.cancel()
                         }
 
                         override fun onTick(millisUntilFinished: Long) {
+                            Log.e("SensorCoordinates: ", "Z: " + getAngle(0) + " Y: " + getAngle(2))
+
                         }
                     }.start()
 //                    Log.e("AllowSend", AllowSend.toString())
@@ -843,7 +846,7 @@ class MAIN : Activity(), SensorEventListener {
         }
     }
 
-    private fun getAngle(index: Int): Float {
+    fun getAngle(index: Int): Float {
         //0 for z axis, 2 for y axis
         //additional minDegrees(360f,*angle*) in order to invert coordinate system for AX12 = ID 14
         val cur = degreesOrientationAngles[index]
@@ -884,9 +887,9 @@ class MAIN : Activity(), SensorEventListener {
 
     private fun findObject(objectName: String): Boolean {
         //0.293 deg/bit - conversion from angle to bit for AX-12+
-        Log.e("Finding Object", "In Here")
+//        Log.e("Finding Object", "In Here")
         var objName = objectName.toLowerCase().trim().replace("\\s".toRegex(), "")
-        Log.i("Finding", objName)
+//        Log.i("Finding", objName)
         try {
             val objCoords = obj_coordinate_map[objName]
             val obj_z = objCoords?.get(0)
@@ -901,9 +904,9 @@ class MAIN : Activity(), SensorEventListener {
 
             pan_servo = bit_z.toInt()
             tilt_servo = bit_y.toInt()
-            Log.e("pan_servo", " $pan_servo")
-            Log.e("tilt_servo", " $tilt_servo")
-            Log.e("Sending Command: ", "Z: ${bit_z.toInt()}" + "Y: ${bit_y.toInt()}")
+//            Log.e("pan_servo", " $pan_servo")
+//            Log.e("tilt_servo", " $tilt_servo")
+//            Log.e("Sending Command: ", "Z: ${bit_z.toInt()}" + "Y: ${bit_y.toInt()}")
 
             //set FaceBoundsOverlay to these coords until finish
             object : CountDownTimer(3000, 50) {

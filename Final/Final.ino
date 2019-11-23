@@ -1,4 +1,7 @@
 #include <DynamixelSerial1.h>
+#define TIME_MSG_LEN 11
+#define TIME_HEADER 255
+
 #define BUFFERSIZE 127
 #define PAN_SERVO 15
 #define TILT_SERVO 14
@@ -45,6 +48,7 @@ void loop() {
     command.toCharArray(command_arr, command.length());
     Serial.println(command);
     if(command_arr[0] == 'z'){  //init
+//      Dynamixel.moveRW(14,random(200,600));
       Dynamixel.torqueStatus(PAN_SERVO,ON);
       Dynamixel.torqueStatus(TILT_SERVO,ON);
       Dynamixel.torqueStatus(RIGHT_SHOULDER,ON);
@@ -53,24 +57,57 @@ void loop() {
       Dynamixel.torqueStatus(LEFT_ARM,ON);
       Dynamixel.torqueStatus(RIGHT_ELBOW,ON);
       Dynamixel.torqueStatus(LEFT_ELBOW,ON);
+      delay(500);
       Dynamixel.moveRW(PAN_SERVO,512);
       Dynamixel.action();
+      delay(1000);
       Dynamixel.moveRW(TILT_SERVO,512);
       Dynamixel.action();
-      Dynamixel.moveRW(RIGHT_SHOULDER,512);
-      Dynamixel.action();
       delay(800);
-      Dynamixel.moveRW(RIGHT_ARM,512);
+      Dynamixel.move(RIGHT_ARM,512);
+      Dynamixel.move(RIGHT_ELBOW,512);
+      Dynamixel.move(RIGHT_SHOULDER,512);
+      delay(600);
+      Dynamixel.move(LEFT_ARM,512);
+      Dynamixel.move(LEFT_SHOULDER,512);
+      Dynamixel.move(LEFT_ELBOW,512);
+      delay(600);
+    }
+    else if(command_arr[0] == 'y'){
+      Dynamixel.moveRW(PAN_SERVO,512);
       Dynamixel.action();
-      Dynamixel.moveRW(RIGHT_ELBOW,512);
+      delay(500);
+      Dynamixel.moveRW(TILT_SERVO,512);
       Dynamixel.action();
-      Dynamixel.moveRW(LEFT_SHOULDER,512);
-      Dynamixel.action();
+      delay(500);
+      Dynamixel.move(RIGHT_ARM, 512);
+      delay(500);
+      Dynamixel.move(LEFT_ARM,200);
+      Dynamixel.move(LEFT_ELBOW,230);
+      Dynamixel.move(LEFT_SHOULDER,612);
       delay(800);
-      Dynamixel.moveRW(LEFT_ARM,512);
+      Dynamixel.move(RIGHT_ARM,780);
+      Dynamixel.move(RIGHT_ELBOW,770);
+      Dynamixel.move(RIGHT_SHOULDER,412);
+      delay(600);
+    }
+    else if(command_arr[0] == 'x'){
+      Dynamixel.moveRW(PAN_SERVO,512);
       Dynamixel.action();
-      Dynamixel.moveRW(LEFT_ELBOW,512);
-      Dynamixel.action();
+      delay(500);
+//      Dynamixel.moveRW(TILT_SERVO,512);
+//      Dynamixel.action();
+//      delay(500);
+      Dynamixel.move(RIGHT_ARM,780);
+      Dynamixel.move(RIGHT_ELBOW,770);
+      Dynamixel.move(LEFT_ARM,200);
+      delay(600);
+      Dynamixel.move(LEFT_ELBOW,230);
+      Dynamixel.move(RIGHT_SHOULDER,412);
+      Dynamixel.move(LEFT_SHOULDER,612);
+      delay(600);
+      Dynamixel.move(TILT_SERVO,250);
+      delay(400);
     }
     else if(command_arr[0] == '~'){
       inLength = 1;
@@ -98,6 +135,7 @@ void loop() {
         Dynamixel.torqueStatus(RIGHT_SHOULDER,ON);
         Dynamixel.torqueStatus(RIGHT_ARM,ON);
         Dynamixel.torqueStatus(RIGHT_ELBOW,ON);
+        
         Dynamixel.moveRW(RIGHT_ARM, 710);
         Dynamixel.action();
         Dynamixel.moveRW(RIGHT_ELBOW,612);
@@ -107,6 +145,22 @@ void loop() {
         
       } else if(command_arr[inLength]=='g'){ //gestures
         inLength=3;
+        if(command_arr[inLength]=='a'){ //hello
+          Dynamixel.moveSpeed(RIGHT_SHOULDER,812,500);
+          Dynamixel.moveSpeed(RIGHT_ARM,512,300);
+          Dynamixel.moveSpeed(RIGHT_ELBOW,512,300);
+          delay(300);
+          Dynamixel.moveSpeed(RIGHT_ELBOW,800,500);
+          Dynamixel.moveSpeed(RIGHT_ARM,700,300);
+          delay(300);
+          Dynamixel.moveSpeed(RIGHT_ARM,512,300);
+          Dynamixel.moveSpeed(RIGHT_ELBOW,512,300);
+          delay(300);
+          Dynamixel.move(RIGHT_ARM,780);
+          Dynamixel.move(RIGHT_ELBOW,770);
+          Dynamixel.move(RIGHT_SHOULDER,412);
+          delay(800);
+        }
         
       } else if(command_arr[inLength]=='d'){
         inLength=3;
@@ -122,11 +176,13 @@ void loop() {
           inLength++;
         }
         Dynamixel.torqueStatus(PAN_SERVO,ON);
-        Dynamixel.moveRW(PAN_SERVO,p_position.toInt());
-        Dynamixel.action();
+        Dynamixel.moveSpeed(PAN_SERVO,p_position.toInt(),150);
+//        Dynamixel.moveRW(PAN_SERVO,p_position.toInt());
+//        Dynamixel.action();
         Dynamixel.torqueStatus(TILT_SERVO,ON);
-        Dynamixel.moveRW(TILT_SERVO,t_position.toInt());
-        Dynamixel.action();
+        Dynamixel.moveSpeed(TILT_SERVO,t_position.toInt(),150);
+//        Dynamixel.moveRW(TILT_SERVO,t_position.toInt());
+//        Dynamixel.action();
         delay(300);
       }
     }

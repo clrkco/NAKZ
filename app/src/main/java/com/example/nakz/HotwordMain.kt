@@ -200,6 +200,15 @@ class HotwordMain : Activity(), SensorEventListener {
             button.visibility = View.INVISIBLE
             imageButton.visibility = View.VISIBLE
         }
+        imageButton.setOnClickListener {
+            //            Log.e("Press","press")
+//            start = false
+            tempCenterX = pan_servo
+            tempCenterY = tilt_servo
+            Log.e("Temps: ", "TempCenterX: $tempCenterX TempCenterY: $tempCenterY")
+            AllowFaceTracking = false
+            speak()
+        }
 
         // Java V2
         initV2Chatbot()
