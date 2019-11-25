@@ -89,6 +89,9 @@ class MAIN : Activity(), SensorEventListener {
 
     var showingReminder = false
 
+    var objectExists = false
+    var dance = false
+
     companion object {
         //To Prevent unnecessary movement in face tracking
         private var prevCenterX = 0f
@@ -161,22 +164,24 @@ class MAIN : Activity(), SensorEventListener {
         setContentView(R.layout.compass_main)
 //        getContacts()
         //Blinking
-        object : CountDownTimer(timerSecs.toLong(),1000){
+        object : CountDownTimer(timerSecs.toLong(), 1000) {
             override fun onFinish() {
                 this.cancel()
                 timerSecs = (1000..6000).random()
 //                Log.e("OnFinish", timerSecs.toString())
                 this.start()
                 imageButton.setBackgroundResource(R.drawable.blink)
-                object : CountDownTimer(700,1000){
+                object : CountDownTimer(700, 1000) {
                     override fun onFinish() {
                         this.cancel()
                         imageButton.setBackgroundResource(R.drawable.eyes)
                     }
+
                     override fun onTick(p0: Long) {
                     }
                 }.start()
             }
+
             override fun onTick(p0: Long) {
 //                Log.i("Time",timerSecs.toString())
             }
@@ -211,7 +216,7 @@ class MAIN : Activity(), SensorEventListener {
 //            start = false
             tempCenterX = pan_servo
             tempCenterY = tilt_servo
-            Log.e("Temps: ", "TempCenterX: $tempCenterX TempCenterY: $tempCenterY")
+            Log.e("Callback_IMG: ", "TempCenterX: $tempCenterX TempCenterY: $tempCenterY")
             AllowFaceTracking = false
             speak()
         }
@@ -249,7 +254,7 @@ class MAIN : Activity(), SensorEventListener {
                 savedInstanceState.getSerializable("coordinate_map") as HashMap<String, FloatArray>
             rTitle = savedInstanceState.getStringArrayList("rTitle")!!
             rTime = savedInstanceState.getStringArrayList("rName")!!
-        } catch (e : Exception) {
+        } catch (e: Exception) {
             Log.e("OnRestore", "Error restoring state.")
         }
     }
@@ -268,9 +273,12 @@ class MAIN : Activity(), SensorEventListener {
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500)
-        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1)
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,"Hi There! :) ")
+        intent.putExtra(
+            RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+            1500
+        )
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Hi There! :) ")
         intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 30000)
         intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500)
         try {
@@ -310,11 +318,12 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     private fun setPTCoords() { //function to stabilize pan tilt servo coords after talking with chatbot during thread sleep
-        object : CountDownTimer(4000, 1) {
+        object : CountDownTimer(3000, 1) {
             override fun onFinish() {
                 AllowFaceTracking = true
                 this.cancel()
             }
+
             override fun onTick(p0: Long) {
                 pan_servo = tempCenterX
                 tilt_servo = tempCenterY
@@ -347,6 +356,10 @@ class MAIN : Activity(), SensorEventListener {
                     while (mTTS.isSpeaking) {
                     }
                     loop += 1
+                }
+                if (count == 0) {
+                    botReply = "You have not set any reminders yet."
+                    mTTS.speak(botReply, TextToSpeech.QUEUE_ADD, null, null)
                 }
                 setPTCoords()
                 start = false
@@ -402,7 +415,7 @@ class MAIN : Activity(), SensorEventListener {
                 botReply = "Reminder name $temp1 is set at $temp2"
                 gesture = "~g_4_#!"
             } else if (botReply.contains("f_findobject", ignoreCase = true)) {
-                val objectExists = findObject(botReply.substring(13, botReply.length))
+                objectExists = findObject(botReply.substring(13, botReply.length))
                 //findObject has setPTCoords built-in
                 if (objectExists) {
                     botReply = "Finding" + botReply.substring(13, botReply.length)
@@ -413,47 +426,82 @@ class MAIN : Activity(), SensorEventListener {
                 }
             } else if (botReply.contains("f_registerObject", ignoreCase = true)) {
                 val objectRegistered = registerObject(botReply.substring(17, botReply.length))
-                botReply = if(objectRegistered)
+                botReply = if (objectRegistered)
                     botReply.substring(17, botReply.length) + " registered"
                 else
                     "You have already registered this object before. Please choose another name for this object and try again!"
                 gesture = "~g_2_#!"
+            } else if (botReply.contains("f_dance",ignoreCase=true)) {
+                botReply = "Lemme show you my sweet moves!"
+                gesture = "~g_5_#!"
+                dance = true
+                start = false
             } else if (botIntent.contains("smalltalk.greetings.hello", ignoreCase = true)) {
                 gesture = "~g_a_#!"
-            } else if(botIntent.contains("jokes.get", ignoreCase = true)){
+            } else if (botIntent.contains("jokes.get", ignoreCase = true)) {
                 gesture = "~g_1_#!"
             } else {
                 val rnds = (1..4).random()
-                gesture ="~g_${rnds}_#!"
+                gesture = "~g_${rnds}_#!"
             }
             if (!showingReminder)
                 mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
 //            AllowSend = false
+            Log.i("Callback_Response", "Response")
             sendCommand(gesture)
             var sentAlready = false
-            object : CountDownTimer(3000, 1000) {
-                override fun onFinish() {
+            if(!dance) {
+                object : CountDownTimer(3000, 1000) {
+                    override fun onFinish() {
 //                    Log.e("Timer:", "timer finished")
-                    if (!sentAlready && !start) {
-                        sendCommand("x_")
-                        sentAlready = true
+                        if (!sentAlready && !start && !objectExists) {
+                            sendCommand("x_")
+                            sentAlready = true
+                        }
+                        object : CountDownTimer(1500, 1000) {
+                            override fun onFinish() {
+                                this.cancel()
+                                AllowSend = true
+                            }
+
+                            override fun onTick(p0: Long) {
+                            }
+                        }.start()
+                        this.cancel() //remove this if it bugs out
                     }
-                    object : CountDownTimer(1500, 1000) {
-                        override fun onFinish() {
-                            this.cancel()
-                            AllowSend = true
-                        }
 
-                        override fun onTick(p0: Long) {
-                        }
-                    }.start()
-                    this.cancel() //remove this if it bugs out
-                }
-
-                override fun onTick(p0: Long) {
+                    override fun onTick(p0: Long) {
 //                    Log.i("ticking", "ticking")
-                }
-            }.start()
+                    }
+                }.start()
+            } else {
+                object : CountDownTimer(12800, 1000) {
+                    override fun onFinish() {
+//                    Log.e("Timer:", "timer finished")
+                        if (!sentAlready && !start && !objectExists) {
+                            sendCommand("x_")
+                            sentAlready = true
+                        }
+                        object : CountDownTimer(1500, 1000) {
+                            override fun onFinish() {
+                                this.cancel()
+                                mTTS.speak("I wish I had legs to breakdance though.", TextToSpeech.QUEUE_FLUSH, null, null)
+                                AllowSend = true
+                                AllowFaceTracking = true
+                                dance = false
+                            }
+
+                            override fun onTick(p0: Long) {
+                            }
+                        }.start()
+                        this.cancel() //remove this if it bugs out
+                    }
+
+                    override fun onTick(p0: Long) {
+//                    Log.i("ticking", "ticking")
+                    }
+                }.start()
+            }
             while (mTTS.isSpeaking) {
             }
 
@@ -465,12 +513,13 @@ class MAIN : Activity(), SensorEventListener {
         }
         //by this point, no more tts commands and done saying reminders
         showingReminder = false
-        object : CountDownTimer(1500,1000){
+        object : CountDownTimer(1500, 1000) {
             override fun onFinish() {
                 this.cancel()
                 if (start)
                     speak()
             }
+
             override fun onTick(p0: Long) {
             }
         }.start()
@@ -579,7 +628,6 @@ class MAIN : Activity(), SensorEventListener {
                 context.startActivity(intent)
             } else {
                 //send init servos to arduino
-                var input = "z_"
 //                if (bluetoothSocket != null) {
 //                    try {
 //                        bluetoothSocket!!.outputStream.write(input.toByteArray())
@@ -599,7 +647,7 @@ class MAIN : Activity(), SensorEventListener {
 //                }
 //                //wait for motors to configure
 //                Thread.sleep(3500)
-                input = "y_"
+                var input = "y_"
                 if (bluetoothSocket != null) {
                     try {
                         bluetoothSocket!!.outputStream.write(input.toByteArray())
@@ -798,7 +846,7 @@ class MAIN : Activity(), SensorEventListener {
                     Log.i("Face Track", "sending")
                     sendCommand("~d_${pan_servo}_${tilt_servo}_#!")
                     AllowSend = false
-                    object : CountDownTimer(3000, 30) { //change if want to decrease interval
+                    object : CountDownTimer(900, 30) { //change if want to decrease interval
                         override fun onFinish() {
                             AllowSend = true
                             this.cancel()
@@ -909,7 +957,7 @@ class MAIN : Activity(), SensorEventListener {
 //            Log.e("Sending Command: ", "Z: ${bit_z.toInt()}" + "Y: ${bit_y.toInt()}")
 
             //set FaceBoundsOverlay to these coords until finish
-            object : CountDownTimer(3000, 50) {
+            object : CountDownTimer(7000, 10) {
                 override fun onFinish() {
                     this.cancel()
                 }
@@ -922,9 +970,9 @@ class MAIN : Activity(), SensorEventListener {
             }.start()
             AllowSend = false //give motors time to move before sending again
             sendCommand("~p_${pan_servo}" + "_${tilt_servo}_#!")
-            object : CountDownTimer(5000, 1000) {
+            object : CountDownTimer(5500, 1000) {
                 override fun onFinish() {
-                    FaceBoundsOverlay.facesBounds.clear()
+//                    FaceBoundsOverlay.facesBounds.clear()
                     sendCommand("x_")
                     AllowSend = true
                     AllowFaceTracking = true
@@ -946,7 +994,7 @@ class MAIN : Activity(), SensorEventListener {
     }
 
     /*Use this function to register POIs */
-    private fun registerObject(newObject: String) : Boolean {
+    private fun registerObject(newObject: String): Boolean {
         var objName = newObject.toLowerCase().trim().replace("\\s".toRegex(), "")
         Log.e("Object Registered: ", objName)
         if (!obj_coordinate_map.containsKey(objName)) {
