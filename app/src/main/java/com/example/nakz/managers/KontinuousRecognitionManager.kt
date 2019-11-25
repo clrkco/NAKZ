@@ -3,52 +3,39 @@ package com.example.nakz
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
-import android.media.AudioManager.*
 import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import android.util.Log
-import com.example.nakz.RecognitionCallback
-import com.example.nakz.RecognitionStatus
+//import com.github.stephenvinouze.core.interfaces.RecognitionCallback
+//import com.github.stephenvinouze.core.models.RecognitionStatus
 import java.util.*
 
-/**
- * Created by stephenvinouze on 16/05/2017.
- */
-class KontinuousRecognitionManager(
-    private val context: Context,
-    private val activationKeyword: String,
-    private val shouldMute: Boolean? = false,
-    private val callback: RecognitionCallback? = null
-) : RecognitionListener {
-
-    companion object {
-        var isActivated: Boolean = false
-    }
+class KontinuousRecognitionManager(private val context: Context,
+                                   private val activationKeyword: String,
+                                   private val shouldMute: Boolean? = false,
+                                   private val callback: RecognitionCallback? = null) : RecognitionListener {
 
     var recognizerIntent: Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
 
-
+    private var isActivated: Boolean = false
     private var isListening: Boolean = false
     private var speech: SpeechRecognizer? = null
-    private var audioManager: AudioManager =
-        context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private var audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     init {
         recognizerIntent.run {
-            putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-            )
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-//            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
-//            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-//            }
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            }
         }
+
         initializeRecognizer()
     }
 
@@ -76,28 +63,29 @@ class KontinuousRecognitionManager(
 
     fun stopRecognition() {
         speech?.stopListening()
+        isActivated = false
     }
 
     fun cancelRecognition() {
         speech?.cancel()
     }
 
-//    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION")
     private fun muteRecognition(mute: Boolean) {
         audioManager.run {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val flag = if (mute) ADJUST_MUTE else ADJUST_UNMUTE
-                adjustStreamVolume(STREAM_NOTIFICATION, flag, 0)
-                adjustStreamVolume(STREAM_ALARM, flag, 0)
-                adjustStreamVolume(STREAM_MUSIC, flag, 0)
-                adjustStreamVolume(STREAM_RING, flag, 0)
-                adjustStreamVolume(STREAM_SYSTEM, flag, 0)
+                val flag = if (mute) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE
+                adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, flag, 0)
+                adjustStreamVolume(AudioManager.STREAM_ALARM, flag, 0)
+                adjustStreamVolume(AudioManager.STREAM_MUSIC, flag, 0)
+                adjustStreamVolume(AudioManager.STREAM_RING, flag, 0)
+                adjustStreamVolume(AudioManager.STREAM_SYSTEM, flag, 0)
             } else {
-                setStreamMute(STREAM_NOTIFICATION, mute)
-                setStreamMute(STREAM_ALARM, mute)
-                setStreamMute(STREAM_MUSIC, mute)
-                setStreamMute(STREAM_RING, mute)
-                setStreamMute(STREAM_SYSTEM, mute)
+                setStreamMute(AudioManager.STREAM_NOTIFICATION, mute)
+                setStreamMute(AudioManager.STREAM_ALARM, mute)
+                setStreamMute(AudioManager.STREAM_MUSIC, mute)
+                setStreamMute(AudioManager.STREAM_RING, mute)
+                setStreamMute(AudioManager.STREAM_SYSTEM, mute)
             }
         }
     }
@@ -156,12 +144,9 @@ class KontinuousRecognitionManager(
         val matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
         val scores = results.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
         if (matches != null) {
-//            if (isActivated) {
-//                if(matches[0] == "off")
-//                    isActivated=false
-//                callback?.onResults(matches, scores)
-//            } else {
-            if (!isActivated) {
+            if (isActivated) {
+                callback?.onResults(matches, scores)
+            } else {
                 matches.forEach {
                     if (it.contains(other = activationKeyword, ignoreCase = true)) {
                         isActivated = true
@@ -169,22 +154,11 @@ class KontinuousRecognitionManager(
                         return@forEach
                     }
                 }
-                while (isActivated) {
-                    Log.e("try", "isActivated true loop")
-                    speech?.startListening(recognizerIntent)
-                    //loop (while(isActivated))
-                    //create speech recognizer
-                    //send to dialogflow
-                    //tts
-                    //if (result == "off") isActivated = false
-                }
-                isListening = false
-                startRecognition()
             }
         }
 
+        isListening = false
+        startRecognition()
     }
 
-
-//        startRecognition()
 }

@@ -314,7 +314,6 @@ class MAIN : Activity(), SensorEventListener {
         val queryInput = QueryInput.newBuilder()
             .setText(TextInput.newBuilder().setText(message).setLanguageCode("en-US")).build()
         RequestJavaV2Task(this, session!!, sessionsClient!!, queryInput).execute()
-
     }
 
     private fun setPTCoords() { //function to stabilize pan tilt servo coords after talking with chatbot during thread sleep
@@ -323,7 +322,6 @@ class MAIN : Activity(), SensorEventListener {
                 AllowFaceTracking = true
                 this.cancel()
             }
-
             override fun onTick(p0: Long) {
                 pan_servo = tempCenterX
                 tilt_servo = tempCenterY
@@ -444,6 +442,7 @@ class MAIN : Activity(), SensorEventListener {
                 val rnds = (1..4).random()
                 gesture = "~g_${rnds}_#!"
             }
+
             if (!showingReminder)
                 mTTS.speak(botReply, TextToSpeech.QUEUE_FLUSH, null, null)
 //            AllowSend = false
@@ -502,6 +501,7 @@ class MAIN : Activity(), SensorEventListener {
                     }
                 }.start()
             }
+
             while (mTTS.isSpeaking) {
             }
 
@@ -519,11 +519,9 @@ class MAIN : Activity(), SensorEventListener {
                 if (start)
                     speak()
             }
-
             override fun onTick(p0: Long) {
             }
         }.start()
-
     }
 
 
